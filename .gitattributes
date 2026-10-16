@@ -1,6 +1,9 @@
 # 统一行尾，避免 Windows / Linux 互相 checkout 时整文件 diff
 * text=auto
 
+# 说明：.ps1 与 .iss 必须带 UTF-8 BOM
+#   PowerShell 5.1 会把无 BOM 的脚本按 ANSI 解码，中文注释会破坏语法；
+#   Inno Setup 按 BOM 判定脚本编码（无 BOM 时依赖版本/系统代码页，不可靠）。
 *.py    text eol=lf
 *.md    text eol=lf
 *.json  text eol=lf

@@ -373,6 +373,15 @@ git push origin v1.0.1
 **发版前记得改版本号**：`plugin.json` 的 `version`（流水线用它的值给产物命名），
 如需同步可一并改 `README` 与 `tools/innosetup/ClassSpeaker.iss` 里的 `MyAppVersion`。
 
+> **推送报 `schannel: failed to receive handshake` 怎么办**
+> 这是国内网络链路被干扰（`git ls-remote` 能通、`git push` 握手失败，就是这个特征）。
+> 让 git 走本地代理即可，用完取消：
+> ```bat
+> git config --global http.proxy http://127.0.0.1:7897   :: 换成你自己的代理端口
+> git config --global --unset http.proxy
+> ```
+> 本文档所在环境就是用这种方式推上去的（Clash Verge 默认 7897）。
+
 ## 12. 许可证
 
 [MIT](LICENSE) © 2026 MC-HUAIHUAI
