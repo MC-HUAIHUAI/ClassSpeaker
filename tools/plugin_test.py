@@ -144,6 +144,10 @@ def main():
         check("设置页能显示地址",
               "http" in settings.report_label.text(),
               settings.report_label.text().splitlines()[-1])
+        check("插件模式下禁用「开机自启」开关（改由 CW 负责）",
+              settings.autostart_check.isEnabled() is False
+              and "Class Widgets" in settings.autostart_label.text(),
+              settings.autostart_label.text())
         settings.close()
 
         print("\n== update() 心跳 ==")

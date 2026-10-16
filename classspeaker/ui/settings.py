@@ -389,6 +389,16 @@ class SettingsPanel(QWidget):
             self.autostart_check.setChecked(False)
             self.autostart_label.setText("当前系统不支持（仅 Windows）")
             return
+        if _PLUGIN_MODE["value"]:
+            # 插件模式下开机自启应该由 Class Widgets 自己负责：
+            # 我们注册 run.py 既不合适（插件目录里通常没有它）也没意义
+            self.autostart_check.setChecked(False)
+            self.autostart_check.setEnabled(False)
+            self.autostart_label.setText(
+                "插件模式下由 Class Widgets 负责开机自启"
+                "（在 CW 的设置里开启即可），本开关不适用。"
+            )
+            return
         self.autostart_check.setChecked(autostart.is_enabled())
         command = autostart.launch_command()
         registered = autostart.current_value()
@@ -556,3 +566,16 @@ _CORE_HOLDER = {"core": None}
 
 def set_current_core(core):
     _CORE_HOLDER["core"] = core
+
+
+# 插件模式标记：由 main.py 在导入时置位。用于把"开机自启"这类
+# 只对独立版有意义的开关隐藏/禁用掉。
+_PLUGIN_MODE = {"value": False}
+
+
+def set_plugin_mode(enabled=True):
+    _PLUGIN_MODE["value"] = bool(enabled)
+
+
+def is_plugin_mode():
+    return bool(_PLUGIN_MODE["value"])

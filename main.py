@@ -115,3 +115,7 @@ class Plugin(object):
 # CW 会在包（plugins.ClassSpeaker）上查找 Settings —— 由 __init__.py 再导出，
 # 这里提供一份引用，方便直接 from main import Settings。
 from .classspeaker.ui import PluginSettings as Settings  # noqa: E402,F401
+from .classspeaker.ui import set_plugin_mode  # noqa: E402,F401
+
+# 告诉设置界面"现在是插件模式"：开机自启之类只对独立版有意义的项要禁用
+set_plugin_mode(True)

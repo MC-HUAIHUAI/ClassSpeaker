@@ -3,7 +3,14 @@
 
 from .desktop import SpeakerDesktop
 from .popup import MessageBox
-from .settings import PluginSettings, SettingsDialog, SettingsPanel, set_current_core
+from .settings import (
+    PluginSettings,
+    SettingsDialog,
+    SettingsPanel,
+    is_plugin_mode,
+    set_current_core,
+    set_plugin_mode,
+)
 
 __all__ = [
     "SpeakerDesktop",
@@ -12,4 +19,6 @@ __all__ = [
     "SettingsPanel",
     "PluginSettings",
     "set_current_core",
+    "set_plugin_mode",
+    "is_plugin_mode",
 ]
