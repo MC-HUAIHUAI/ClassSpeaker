@@ -115,8 +115,9 @@ plugins\ClassSpeaker\
 4. 首次运行会**自动弹出一次设置窗口**；之后可以在 CW 的插件管理里点设置，
    或（若把 `show_tray_icon` 设为 true）用托盘图标右键 → 设置…。
 
-> 插件模式下**不会额外生成托盘图标**（CW 自带插件设置页），
-> 想让喇叭图标常驻就在 `plugins\ClassSpeaker\data\config.json` 里加 `"show_tray_icon": true`。
+> 插件模式的托盘图标跟随 `data\config.json` 里的 `show_tray_icon`（默认 `true`，
+> 任务栏会出现一个喇叭图标，右键可设置/测试弹窗/复制地址/开机自启）；
+> 不想要就把它改成 `false` 再重启 CW，设置入口改用 CW 插件管理里的设置页。
 >
 > 已在本机部署并验证过：`F:\develop_class_call\ClassWidgets-Windows-x64\plugins\ClassSpeaker\`。
 > 重新部署重复执行上面的命令即可（会覆盖，但**保留 `data/` 目录**，不会清掉已有账号）。
@@ -339,8 +340,8 @@ powershell -ExecutionPolicy Bypass -File tools\deploy_to_cw.ps1
    （等价于把 `"ClassSpeaker"` 写进 `<CW>\config\plugin.json` 的 `enabled_plugins`）；
 2. 在 CW 里**添加小组件「教室小喇叭」**，它会实时显示 `待确认 N 条　http://192.168.1.39:10265`；
 3. 首次运行会**自动弹出一次设置窗口**（端口、弹窗大小/字体/透明度、提示音、开机自启、测试弹窗）；
-4. 之后想改设置：CW 插件管理里点设置，或把 `data\config.json` 的 `show_tray_icon` 设为 `true`
-   让喇叭托图标常驻（插件模式默认不建托盘图标，避免和 CW 自己的图标打架）。
+4. 之后想改设置：CW 插件管理里点设置，或点任务栏的喇叭托盘图标右键 → 设置…
+   （插件模式的托盘图标可用 `data\config.json` 的 `show_tray_icon: false` 关掉）。
 
 ### 10.4 老师怎么用
 

@@ -55,7 +55,11 @@ class Config(object):
         return self._data
 
     def has_explicit(self, key):
-        """用户是否在 config.json 里显式写过这一项（用来区分"默认值"与"用户选择"）。"""
+        """用户是否在 config.json 里显式写过这一项。
+
+        注意：Config.save() 会把整个配置（含默认值）落盘，所以一旦保存过，
+        所有键都会变成"显式"——这个函数只适合诊断，不要用来做行为分支。
+        """
         return key in self._explicit
 
     def save(self):

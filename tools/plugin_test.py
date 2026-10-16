@@ -132,8 +132,9 @@ def main():
         if plugin.core is not None:
             check("教师端地址可用", plugin.core.address.startswith("http://"),
                   plugin.core.address)
-        check("插件模式默认不额外建托盘图标",
-              plugin.desktop is not None and plugin.desktop.use_tray is False)
+        check("插件模式托盘开关跟随配置（默认 true）",
+              plugin.desktop is not None
+              and plugin.desktop.use_tray is bool(plugin.core.config.get("show_tray_icon", True)))
 
         print("\n== CW 设置页 ==")
         settings = module.Settings(temp_dir)

@@ -55,12 +55,9 @@ class Plugin(object):
         try:
             self.core = SpeakerCore()
             set_current_core(self.core)          # 让 CW 的设置页拿到核心对象
-            # 插件模式下 CW 自带插件设置页，**默认不再额外挂托盘图标**
-            # （避免任务栏出现两个喇叭）；想保留托盘（测试弹窗/复制地址/
-            # 开机自启）就在 config.json 里显式写 "show_tray_icon": true。
-            config = self.core.config
-            use_tray = (bool(config.get("show_tray_icon", True))
-                        if config.has_explicit("show_tray_icon") else False)
+            # 托盘图标跟随配置（默认 true）。插件模式下来自 data/config.json 的
+            # "show_tray_icon"；不想要多一个图标就设成 false。
+            use_tray = bool(self.core.config.get("show_tray_icon", True))
             self.desktop = SpeakerDesktop(self.core, app, use_tray=use_tray)
             ok, message = self.desktop.start()
             if ok:
