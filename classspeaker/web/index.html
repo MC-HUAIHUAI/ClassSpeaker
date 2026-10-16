@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>教室小喇叭 · 教师端</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="page">
+
+  <header class="topbar">
+    <div class="brand">
+      <svg class="logo" viewBox="0 0 64 64" aria-hidden="true">
+        <rect x="0" y="0" width="64" height="64" rx="15" fill="#2f6fed"/>
+        <path d="M15 25h10l12-10v34L25 39H15z" fill="#fff"/>
+        <path d="M42 22a14 14 0 0 1 0 20M46 16a22 22 0 0 1 0 32"
+              fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+      </svg>
+      <div class="brand-text">
+        <h1>教室小喇叭</h1>
+        <div class="sub"><span id="classroomName">正在连接教室…</span></div>
+      </div>
+    </div>
+    <div class="topright">
+      <span class="dot" id="statusDot"></span>
+      <span class="status" id="statusText">连接中…</span>
+      <span class="addr" id="address"></span>
+      <button class="ghost hidden" id="logoutBtn">退出登录</button>
+    </div>
+  </header>
+
+  <!-- ---------------- 登录 / 注册 ---------------- -->
+  <section class="card auth" id="authView">
+    <div class="tabs">
+      <button class="tab active" data-tab="login">登录</button>
+      <button class="tab" data-tab="register">注册教师账号</button>
+    </div>
+
+    <form id="loginForm" class="form" autocomplete="on">
+      <label>用户名
+        <input type="text" id="loginUser" required autocomplete="username"
+               placeholder="例如 zhangsan">
+      </label>
+      <label>密码
+        <input type="password" id="loginPass" required autocomplete="current-password"
+               placeholder="请输入密码">
+      </label>
+      <button type="submit" class="primary" id="loginBtn">登录</button>
+    </form>
+
+    <form id="registerForm" class="form hidden" autocomplete="on">
+      <label>用户名
+        <input type="text" id="regUser" required autocomplete="username"
+               placeholder="3-32 位字母 / 数字 / 下划线">
+      </label>
+      <label>显示名称（课堂弹窗中显示为 “XXX老师”）
+        <input type="text" id="regName" placeholder="例如 张老师">
+      </label>
+      <label>密码
+        <input type="password" id="regPass" required autocomplete="new-password"
+               placeholder="至少 6 位">
+      </label>
+      <label>确认密码
+        <input type="password" id="regPass2" required autocomplete="new-password">
+      </label>
+      <button type="submit" class="primary" id="regBtn">提交注册申请</button>
+      <p class="hint">注册后需要管理员在教室电脑上审批通过才能登录。</p>
+    </form>
+
+    <div class="msg" id="authMsg"></div>
+  </section>
+
+  <!-- ---------------- 主界面 ---------------- -->
+  <section id="mainView" class="hidden">
+    <div class="grid">
+      <div class="card">
+        <h2>发送消息</h2>
+        <textarea id="contentInput" maxlength="1000"
+                  placeholder="输入要通知教室的内容，例如：请第三排同学上讲台领取试卷。"></textarea>
+        <div class="row between">
+          <span class="hint" id="counter">0 / 1000</span>
+          <button class="primary" id="sendBtn">发送到教室</button>
+        </div>
+        <div class="msg" id="sendMsg"></div>
+      </div>
+
+      <div class="card">
+        <div class="row between">
+          <h2>发送记录</h2>
+          <button class="ghost" id="refreshBtn">刷新</button>
+        </div>
+        <ul class="list" id="messageList">
+          <li class="empty">暂无记录</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card hidden" id="adminCard">
+      <div class="row between">
+        <h2>账号管理（管理员）</h2>
+        <button class="ghost" id="reloadUsersBtn">刷新账号</button>
+      </div>
+      <ul class="list" id="userList"></ul>
+    </div>
+  </section>
+
+  <footer>
+    <span>教室小喇叭 · 校园局域网使用</span>
+    <a class="author" href="https://space.bilibili.com/1437520017"
+       target="_blank" rel="noopener">为作者充电</a>
+  </footer>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
