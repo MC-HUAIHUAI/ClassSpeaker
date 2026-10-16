@@ -1,0 +1,113 @@
+name: Release
+
+# 打 tag 即出包：git tag v1.0.1 && git push origin v1.0.1
+# 也可以手动触发（只构建、不发布，用来验证流水线）
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  PYTHONIOENCODING: utf-8
+  PYTHONUTF8: "1"
+
+jobs:
+  build:
+    name: 构建 ${{ matrix.tag }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x64, bits: 64, tag: x64, dist: dist }
+          - { arch: x86, bits: 32, tag: x86, dist: dist32 }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Python（${{ matrix.arch }}）
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: ${{ matrix.arch }}
+          cache: pip
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: 确认解释器位数
+        run: python -c "import struct;print('bits =', struct.calcsize('P') * 8)"
+
+      - name: 生成图标
+        run: python tools/make_icon.py
+
+      - name: 读取版本号
+        id: ver
+        shell: pwsh
+        run: |
+          $v = python -c "import json;print(json.load(open('plugin.json',encoding='utf-8'))['version'])"
+          "version=$v" >> $env:GITHUB_OUTPUT
+          Write-Host "版本号：$v"
+
+      - name: 打包 exe
+        run: python tools/build_exe.py --arch ${{ matrix.bits }}
+
+      - name: 确认 Inno Setup（windows 镜像自带，缺失则安装）
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            Write-Host "未找到 Inno Setup，尝试 choco 安装…"
+            choco install innosetup -y --no-progress
+          }
+          if (-not (Test-Path $iscc)) { throw "Inno Setup 仍然不可用" }
+
+      - name: 打包中文安装包
+        shell: pwsh
+        run: powershell -ExecutionPolicy Bypass -File tools\build_installer.ps1 -Arch ${{ matrix.bits }} -SkipBuild
+
+      - name: 整理产物
+        shell: pwsh
+        run: |
+          $v = "${{ steps.ver.outputs.version }}"
+          $dist = "${{ matrix.dist }}"
+          New-Item -ItemType Directory -Force -Path out | Out-Null
+          Copy-Item "$dist\ClassSpeaker.exe" "out\ClassSpeaker-$v-${{ matrix.tag }}.exe"
+          Copy-Item "installer\ClassSpeaker-$v-${{ matrix.tag }}-setup.exe" "out\ClassSpeaker-$v-${{ matrix.tag }}-setup.exe"
+          Get-ChildItem out | Select-Object Name, @{n='MB';e={[math]::Round($_.Length/1MB,1)}} | Format-Table -AutoSize
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ClassSpeaker-${{ matrix.tag }}
+          path: out/*
+          if-no-files-found: error
+
+  release:
+    name: 发布 Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: 待发布附件
+        run: ls -lh artifacts
+
+      - name: 创建 / 更新 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/*
+          body_path: .github/release-body.md
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true

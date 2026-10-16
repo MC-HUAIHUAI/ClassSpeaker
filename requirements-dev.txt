@@ -1,0 +1,4 @@
+# 开发 / 打包依赖
+-r requirements.txt
+
+pyinstaller>=6.10

@@ -1,6 +1,8 @@
 # 教室小喇叭（ClassSpeaker）
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/MC-HUAIHUAI/ClassSpeaker/actions/workflows/ci.yml/badge.svg)](https://github.com/MC-HUAIHUAI/ClassSpeaker/actions/workflows/ci.yml)
+[![Release](https://github.com/MC-HUAIHUAI/ClassSpeaker/actions/workflows/release.yml/badge.svg)](https://github.com/MC-HUAIHUAI/ClassSpeaker/actions/workflows/release.yml)
 [![Platform](https://img.shields.io/badge/platform-Windows%2032%2F64-lightgrey.svg)](#)
 [![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)](#)
 
@@ -27,6 +29,10 @@ ClassSpeaker/
 ├─ main.py                   Class Widgets 插件入口
 ├─ plugin.json               CW 插件清单
 ├─ start_classroom.bat       独立版快捷启动
+├─ requirements.txt          运行时依赖（PyQt5）
+├─ requirements-dev.txt      开发 / 打包依赖（+ pyinstaller）
+├─ LICENSE                   MIT 许可证
+├─ .github/                  CI 与自动发布流水线 + Release 正文模板
 ├─ classspeaker/             代码本体（故意用独立包名，避免和 CW 的 ui/ 等目录冲突）│   ├─ paths.py              路径解析（独立 / 插件 / exe 三种形态通用）
 │   ├─ util.py               日志、JSON、取本机内网 IP
 │   ├─ config.py             配置读写（data/config.json）
@@ -341,7 +347,33 @@ powershell -ExecutionPolicy Bypass -File tools\deploy_to_cw.ps1
 
 ---
 
-## 11. 许可证
+## 11. 自动构建（GitHub Actions）
+
+仓库内置两条流水线，**不用在本地跑构建**：
+
+| 流水线 | 触发条件 | 做什么 |
+|---|---|---|
+| `CI` (`.github/workflows/ci.yml`) | push 到 `main`、PR、手动 | 在 **x64 和 x86 两种 Python** 下各跑一遍 103 项自动测试 + 编译检查 |
+| `Release` (`.github/workflows/release.yml`) | 推送 `v*` 标签、手动 | 构建 32/64 位 exe + 中文安装包，自动创建 Release 并挂上 4 个附件 |
+
+**发新版本只要两行命令**：
+
+```bat
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+流水线会并发跑两个架构的任务（约 5 分钟），产物命名成
+`ClassSpeaker-1.0.1-x86-setup.exe` / `-x64-setup.exe` / `-x86.exe` / `-x64.exe`
+自动挂到 Release，正文用 `.github/release-body.md` 模板。
+
+**只想验证流水线、不想发版**：在 Actions 页面手动触发 `Release`（workflow_dispatch），
+它会照常构建并上传 artifacts，但**不会**创建 Release。
+
+**发版前记得改版本号**：`plugin.json` 的 `version`（流水线用它的值给产物命名），
+如需同步可一并改 `README` 与 `tools/innosetup/ClassSpeaker.iss` 里的 `MyAppVersion`。
+
+## 12. 许可证
 
 [MIT](LICENSE) © 2026 MC-HUAIHUAI
 

@@ -11,6 +11,13 @@ import shutil
 import sys
 import tempfile
 
+# 让中文输出在任意控制台代码页下都不会崩（CI 上是英文环境）
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
 # 让测试用临时数据目录，绝不动正式配置与数据库
 os.environ["CLASSSPEAKER_DATA_DIR"] = tempfile.mkdtemp(prefix="classspeaker_gui_data_")
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
