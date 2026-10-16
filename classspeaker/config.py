@@ -40,6 +40,7 @@ class Config(object):
     def __init__(self, path=None):
         self.path = path or paths.CONFIG_PATH
         self._data = dict(DEFAULTS)
+        self._explicit = set()
         self.load()
 
     # ---------- 基础读写 ----------
@@ -50,7 +51,12 @@ class Config(object):
         merged = dict(DEFAULTS)
         merged.update(raw)
         self._data = merged
+        self._explicit = set(raw.keys())
         return self._data
+
+    def has_explicit(self, key):
+        """用户是否在 config.json 里显式写过这一项（用来区分"默认值"与"用户选择"）。"""
+        return key in self._explicit
 
     def save(self):
         util.write_json_atomic(self.path, self._data)
@@ -62,6 +68,7 @@ class Config(object):
         for key, value in (values or {}).items():
             if key in DEFAULTS or key in self._data:
                 self._data[key] = value
+                self._explicit.add(key)
         self.save()
 
     def clone(self, values=None):

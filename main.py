@@ -1,24 +1,21 @@
 # -*- coding: utf-8 -*-
-"""教室小喇叭 —— Class Widgets 插件入口。
+"""教室小喇叭 —— Class Widgets 插件入口（按 CW 真实插件 API 实现）。
 
-安装：把整个 ClassSpeaker 文件夹放进 Class Widgets 的 plugins 目录：
-    ClassWidgets-Windows-x64/plugins/ClassSpeaker/
-        plugin.json
-        main.py        <- 本文件
-        classspeaker/  <- 核心代码 + 网页 + 声音
-        run.py         <- 独立版入口（可选，插件模式下用不到）
+CW 的 PluginLoader 会：
+    1. 扫描 plugins/ 下每个含 plugin.json 的目录；
+    2. 只处理 `config/plugin.json → enabled_plugins` 里列出的插件；
+    3. `importlib.import_module("plugins.<目录名>")` —— **按包导入**，
+       所以本目录必须有 __init__.py，并由它导出 Plugin / Settings；
+    4. `Settings(插件路径)` 构造设置页（可选）；
+    5. `Plugin(cw_contexts, method)` 构造插件（可选），稍后调用 execute()，
+       之后每个心跳调用 update(cw_contexts)。
 
-插件会：
-    1. 在 Class Widgets 进程内启动同一个局域网服务与弹窗程序；
-    2. 注册一个小组件，显示"待确认条数 + 教师端地址"，方便老师找到入口；
-    3. 自带托盘图标，右键 -> 设置…（与独立版完全一致）。
+安装：把整个 ClassSpeaker 文件夹放进 <CW>\\plugins\\ ，
+然后在 CW「设置 → 插件」里启用它。
 """
 import os
-import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-if HERE not in sys.path:
-    sys.path.insert(0, HERE)
 
 WIDGET_CODE = "class-speaker"
 WIDGET_NAME = "教室小喇叭"
@@ -39,16 +36,16 @@ class Plugin(object):
         try:
             self.method.register_widget(WIDGET_CODE, WIDGET_NAME, WIDGET_WIDTH)
             self._widget_ready = True
-        except Exception as exc:  # 老版本没有该接口时不影响主功能
-            self._log("warn", "注册小组件失败：{}".format(exc))
+        except Exception as exc:
+            self._log("warn", "注册小组件失败（不影响弹窗功能）：{}".format(exc))
 
-    # ---------------- 插件生命周期 ----------------
+    # ---------------- 生命周期 ----------------
     def execute(self):
-        """插件加载时执行一次。"""
+        """插件加载完成后执行一次。"""
         from PyQt5.QtWidgets import QApplication
 
-        from classspeaker import SpeakerCore
-        from classspeaker.ui import SpeakerDesktop
+        from .classspeaker import SpeakerCore
+        from .classspeaker.ui import SpeakerDesktop, set_current_core
 
         app = QApplication.instance()
         if app is None:
@@ -57,7 +54,14 @@ class Plugin(object):
 
         try:
             self.core = SpeakerCore()
-            self.desktop = SpeakerDesktop(self.core, app)
+            set_current_core(self.core)          # 让 CW 的设置页拿到核心对象
+            # 插件模式下 CW 自带插件设置页，**默认不再额外挂托盘图标**
+            # （避免任务栏出现两个喇叭）；想保留托盘（测试弹窗/复制地址/
+            # 开机自启）就在 config.json 里显式写 "show_tray_icon": true。
+            config = self.core.config
+            use_tray = (bool(config.get("show_tray_icon", True))
+                        if config.has_explicit("show_tray_icon") else False)
+            self.desktop = SpeakerDesktop(self.core, app, use_tray=use_tray)
             ok, message = self.desktop.start()
             if ok:
                 self._log("info", "服务已启动，教师端地址：{}".format(self.core.address))
@@ -68,7 +72,7 @@ class Plugin(object):
         self._sync_widget()
 
     def update(self, cw_contexts):
-        """Class Widgets 每次心跳都会调用。"""
+        """CW 每次心跳都会调用。"""
         self.cw_contexts = cw_contexts or self.cw_contexts
         self._sync_widget()
 
@@ -97,15 +101,20 @@ class Plugin(object):
     # ---------------- 日志 ----------------
     def _log(self, level, message):
         try:
-            from classspeaker import util
+            from .classspeaker import util
 
             getattr(util.LOG, level if level in ("info", "warn", "error")
                     else "info")(message)
         except Exception:
             pass
         try:
-            from utils import logger  # Class Widgets 自带日志
+            from loguru import logger  # CW 自带
 
             getattr(logger, level, logger.info)("[教室小喇叭] {}".format(message))
         except Exception:
             print("[教室小喇叭] {}".format(message))
+
+
+# CW 会在包（plugins.ClassSpeaker）上查找 Settings —— 由 __init__.py 再导出，
+# 这里提供一份引用，方便直接 from main import Settings。
+from .classspeaker.ui import PluginSettings as Settings  # noqa: E402,F401

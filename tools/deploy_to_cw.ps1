@@ -55,7 +55,7 @@ New-Item -ItemType Directory -Force -Path $dst | Out-Null
 Get-ChildItem -Path $dst -Force | Where-Object { $_.Name -notin @("data") } |
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
-$items = @("main.py", "plugin.json", "classspeaker")
+$items = @("__init__.py", "main.py", "plugin.json", "classspeaker")
 if ($WithStandalone) { $items += @("run.py", "start_classroom.bat", "README.md", "tools") }
 
 $excludeDirs = @("data", "__pycache__", ".git", ".idea", ".vscode", "build", "dist")

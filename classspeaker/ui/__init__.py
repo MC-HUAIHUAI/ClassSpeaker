@@ -3,6 +3,13 @@
 
 from .desktop import SpeakerDesktop
 from .popup import MessageBox
-from .settings import SettingsDialog
+from .settings import PluginSettings, SettingsDialog, SettingsPanel, set_current_core
 
-__all__ = ["SpeakerDesktop", "MessageBox", "SettingsDialog"]
+__all__ = [
+    "SpeakerDesktop",
+    "MessageBox",
+    "SettingsDialog",
+    "SettingsPanel",
+    "PluginSettings",
+    "set_current_core",
+]

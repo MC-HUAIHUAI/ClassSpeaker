@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
-"""调试/设置窗口。
+"""设置面板。
 
-打开方式：
-  * 任务栏（托盘）图标右键 -> 设置
-  * 首次运行自动弹出（仅首次）
+同一套界面用在三个地方：
+  * 独立版 / exe 版的托盘菜单「设置…」
+  * 首次运行自动弹出一次
+  * Class Widgets 插件设置页（CW 会实例化 `Settings(plugin_path)`）
+
+因此基类是 QWidget 而不是 QDialog，且核心对象是**懒解析**的：
+CW 会先构造设置页、后才调用 Plugin.execute()，这时核心还不存在。
 """
 import os
 
@@ -11,7 +15,6 @@ from PyQt5.QtCore import Qt, QUrl, pyqtSignal
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import (
     QCheckBox,
-    QDialog,
     QFileDialog,
     QFormLayout,
     QGroupBox,
@@ -27,19 +30,20 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from .. import autostart, paths, util
+from .. import autostart, config as config_mod, paths, util
 
 from . import style
 from .popup import MessageBox
 
 
-class SettingsDialog(QDialog):
+class SettingsPanel(QWidget):
     saved = pyqtSignal(dict)
 
-    def __init__(self, core, parent=None):
-        super(SettingsDialog, self).__init__(parent)
-        self.core = core
-        self.config = core.config
+    def __init__(self, core=None, parent=None, core_provider=None):
+        super(SettingsPanel, self).__init__(parent)
+        self._core = core
+        self._core_provider = core_provider
+        self._fallback_config = None
         self._preview_popup = None
         self.setWindowTitle("{} · 设置".format(style.APP_TITLE))
         self.setWindowIcon(style.build_icon())
@@ -47,6 +51,25 @@ class SettingsDialog(QDialog):
         self.setMinimumWidth(560)
         self._build_ui()
         self._load_values()
+
+    # ---------------- 核心对象（可能晚于本窗口才创建）----------------
+    @property
+    def core(self):
+        if self._core is None and self._core_provider is not None:
+            try:
+                self._core = self._core_provider()
+            except Exception:
+                self._core = None
+        return self._core
+
+    @property
+    def config(self):
+        core = self.core
+        if core is not None:
+            return core.config
+        if self._fallback_config is None:
+            self._fallback_config = config_mod.Config()
+        return self._fallback_config
 
     # ---------------- 界面 ----------------
     def _build_ui(self):
@@ -88,7 +111,7 @@ class SettingsDialog(QDialog):
         bottom.addWidget(save_btn)
 
         close_btn = QPushButton("关闭", self)
-        close_btn.clicked.connect(self.accept)
+        close_btn.clicked.connect(self.close)
         bottom.addWidget(close_btn)
         layout.addLayout(bottom)
 
@@ -334,21 +357,29 @@ class SettingsDialog(QDialog):
                 self.port_spin.value(),
             )
         )
-        running = self.core.server.running
-        self.service_label.setText(
-            "{}　运行时长：{}　待确认消息：{} 条".format(
-                "运行中" if running else "未运行",
-                util.human_duration(self.core.uptime()),
-                self.core.pending_count(),
+        core = self.core
+        if core is None:
+            self.service_label.setText("未运行（本窗口只是预览配置）")
+        else:
+            running = core.server.running
+            self.service_label.setText(
+                "{}　运行时长：{}　待确认消息：{} 条".format(
+                    "运行中" if running else "未运行",
+                    util.human_duration(core.uptime()),
+                    core.pending_count(),
+                )
             )
-        )
         self._refresh_autostart()
         try:
-            pending = self.core.store.count_users("pending")
-            total = self.core.store.count_users()
-            self.user_stats.setText(
-                "共 {} 个账号，其中 {} 个等待审批".format(total, pending)
-            )
+            store = core.store if core is not None else None
+            if store is None:
+                self.user_stats.setText("账号统计不可用（服务未启动）")
+            else:
+                pending = store.count_users("pending")
+                total = store.count_users()
+                self.user_stats.setText(
+                    "共 {} 个账号，其中 {} 个等待审批".format(total, pending)
+                )
         except Exception:
             self.user_stats.setText("账号统计不可用")
 
@@ -445,7 +476,11 @@ class SettingsDialog(QDialog):
         if not password:
             QtMessageBox.information(self, "重置密码", "请先输入新的管理员密码。")
             return
-        ok, message = self.core.reset_admin_password(password)
+        core = self.core
+        if core is None:
+            QtMessageBox.warning(self, "重置密码", "服务未启动，无法重置密码。")
+            return
+        ok, message = core.reset_admin_password(password)
         if ok:
             self.admin_pwd_edit.clear()
             QtMessageBox.information(self, "重置密码", message)
@@ -458,8 +493,9 @@ class SettingsDialog(QDialog):
         values = self._collect()
         old_port = self.config.port
         self.config.update(values)
-        if values["port"] != old_port:
-            ok, message = self.core.apply_port(values["port"])
+        core = self.core
+        if core is not None and values["port"] != old_port:
+            ok, message = core.apply_port(values["port"])
             if not ok:
                 QtMessageBox.warning(self, "端口", message)
         self.config["first_run"] = False
@@ -478,7 +514,7 @@ class SettingsDialog(QDialog):
         )
 
     def showEvent(self, event):
-        super(SettingsDialog, self).showEvent(event)
+        super(SettingsPanel, self).showEvent(event)
         self._refresh_info()
 
     def closeEvent(self, event):
@@ -488,4 +524,35 @@ class SettingsDialog(QDialog):
             self.config.save()
         except Exception:
             pass
-        super(SettingsDialog, self).closeEvent(event)
+        super(SettingsPanel, self).closeEvent(event)
+
+
+# 独立版 / 托盘沿用旧名字，避免调用处大改
+SettingsDialog = SettingsPanel
+
+
+class PluginSettings(SettingsPanel):
+    """Class Widgets 插件设置页。
+
+    CW 的 PluginLoader 会执行 `Settings(str(PLUGIN_HOME / 插件名))`，
+    所以第一个参数必须是插件路径；核心对象晚点才由 Plugin.execute() 创建，
+    这里用 core_provider 懒解析。
+    """
+
+    def __init__(self, plugin_path=None, parent=None):
+        super(PluginSettings, self).__init__(
+            core=None, parent=parent, core_provider=_current_core
+        )
+        self.PLUGIN_PATH = plugin_path or paths.EXE_DIR
+
+
+def _current_core():
+    """由 main.py 在创建核心后回填。"""
+    return _CORE_HOLDER.get("core")
+
+
+_CORE_HOLDER = {"core": None}
+
+
+def set_current_core(core):
+    _CORE_HOLDER["core"] = core

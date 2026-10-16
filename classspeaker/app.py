@@ -8,7 +8,6 @@ import time
 
 from . import auth, config as config_mod, hub as hub_mod, paths
 from . import server as server_mod, store as store_mod, util
-
 VERSION = "1.0.0"
 
 LOGIN_WINDOW = 300      # 秒
@@ -33,6 +32,26 @@ class SpeakerCore(object):
     # ---------------- 生命周期 ----------------
     FALLBACK_SPAN = 300   # 端口不可用时向后尝试的范围
 
+    def _log_environment(self):
+        """把运行形态写进日志：排查"资源找不到 / 数据写错地方"最有用的一行。"""
+        import sys
+
+        try:
+            util.LOG.info(
+                "运行形态：frozen={} meipass={} executable={}".format(
+                    bool(getattr(sys, "frozen", False)),
+                    getattr(sys, "_MEIPASS", "-") or "-",
+                    getattr(sys, "executable", "-") or "-",
+                )
+            )
+            util.LOG.info(
+                "目录：程序={} 包={} 资源={} 数据={}".format(
+                    paths.APP_DIR, paths.PACKAGE_DIR, paths.WEB_DIR, paths.DATA_DIR
+                )
+            )
+        except Exception:
+            pass
+
     def start(self):
         """返回 (ok, message)。
 
@@ -40,6 +59,7 @@ class SpeakerCore(object):
         时会自动顺延到空闲端口，并把新端口写回配置。
         """
         paths.ensure_dirs()
+        self._log_environment()
         self._ensure_admin_account()
         ok, message = self.server.start()
         if not ok and self.server.last_error in ("in_use", "denied"):

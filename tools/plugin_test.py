@@ -63,9 +63,35 @@ def check(name, condition, detail=""):
 
 
 def load_plugin_module():
-    path = os.path.join(ROOT, "main.py")
-    spec = importlib.util.spec_from_file_location("cs_plugin_main", path)
+    """按 Class Widgets 的方式加载插件。
+
+    CW 执行的是 `importlib.import_module("plugins.<目录名>")`，
+    也就是**把插件目录当包导入**，会执行 __init__.py ——
+    这样才真正验证 CW 能不能在包上找到 Plugin / Settings。
+    （缺 __init__.py 时导入不会报错，但找不到 Plugin，插件实际不会运行。）
+    """
+    package_name = "plugins.ClassSpeaker"
+    parent = os.path.dirname(ROOT)
+    if parent not in sys.path:
+        sys.path.insert(0, parent)
+
+    # CW 里 <CW_HOME>/plugins 本身是个包（CW_HOME 在 sys.path 上），
+    # 这里造一个空的父包，让相对导入能正常解析到 plugins.ClassSpeaker.*
+    if "plugins" not in sys.modules:
+        parent_spec = importlib.util.spec_from_loader(
+            "plugins", loader=None, is_package=True
+        )
+        parent_module = importlib.util.module_from_spec(parent_spec)
+        parent_module.__path__ = []
+        sys.modules["plugins"] = parent_module
+
+    spec = importlib.util.spec_from_file_location(
+        package_name,
+        os.path.join(ROOT, "__init__.py"),
+        submodule_search_locations=[ROOT],
+    )
     module = importlib.util.module_from_spec(spec)
+    sys.modules[package_name] = module
     spec.loader.exec_module(module)
     return module
 
@@ -76,6 +102,12 @@ def main():
     plugin = None
     try:
         module = load_plugin_module()
+        print("\n== 插件包结构（CW 的加载前提）==")
+        check("包导入后能拿到 Plugin", hasattr(module, "Plugin"))
+        check("包导入后能拿到 Settings", hasattr(module, "Settings"))
+        check("Plugin 可调用",
+              callable(getattr(module, "Plugin", None)))
+
         print("\n== 插件加载 ==")
         method = FakeMethod()
         contexts = {"PLUGIN_PATH": temp_dir, "State": 1, "Current_Lesson": "语文"}
@@ -100,6 +132,18 @@ def main():
         if plugin.core is not None:
             check("教师端地址可用", plugin.core.address.startswith("http://"),
                   plugin.core.address)
+        check("插件模式默认不额外建托盘图标",
+              plugin.desktop is not None and plugin.desktop.use_tray is False)
+
+        print("\n== CW 设置页 ==")
+        settings = module.Settings(temp_dir)
+        check("Settings 可用插件路径构造", settings is not None)
+        check("设置页懒解析到了核心对象",
+              settings.core is plugin.core)
+        check("设置页能显示地址",
+              "http" in settings.report_label.text(),
+              settings.report_label.text().splitlines()[-1])
+        settings.close()
 
         print("\n== update() 心跳 ==")
         before = len(method.contents)

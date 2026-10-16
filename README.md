@@ -27,6 +27,7 @@
 ClassSpeaker/
 ├─ run.py                    独立版入口（pythonw run.py）
 ├─ main.py                   Class Widgets 插件入口
+├─ __init__.py               CW 插件包入口（**必须有**：导出 Plugin / Settings）
 ├─ plugin.json               CW 插件清单
 ├─ start_classroom.bat       独立版快捷启动
 ├─ requirements.txt          运行时依赖（PyQt5）
@@ -98,18 +99,26 @@ powershell -ExecutionPolicy Bypass -File tools\deploy_to_cw.ps1
 
 ```
 plugins\ClassSpeaker\
+├─ __init__.py      ← **必须有**：CW 把插件目录当包导入，由它导出 Plugin / Settings
 ├─ plugin.json      插件清单
 ├─ main.py          插件入口（CW 调它）
 └─ classspeaker\    核心代码 + 网页 + 声音
 ```
 
-随后：
+随后（**两步都不能省**）：
 
-1. 启动 `ClassWidgets.exe`（插件自动加载并起服务，**不需要你另外开程序**）；
-2. 在 Class Widgets 的「小组件」里添加 **教室小喇叭**，它会显示「待确认 N 条 + 教师端地址」；
-3. 托盘图标右键 → 设置… 修改端口、弹窗大小等（首次运行同样会自动弹出一次）。
+1. 启动 `ClassWidgets.exe`；
+2. 在 CW **「设置 → 插件」里把「教室小喇叭」设为启用**
+   （CW 只加载 `config\plugin.json → enabled_plugins` 里列出的插件；
+   也可以手动把 `"ClassSpeaker"` 写进这个文件）；
+3. 在 CW 的**小组件列表里添加「教室小喇叭」**，它会显示「待确认 N 条 + 教师端地址」；
+4. 首次运行会**自动弹出一次设置窗口**；之后可以在 CW 的插件管理里点设置，
+   或（若把 `show_tray_icon` 设为 true）用托盘图标右键 → 设置…。
 
-> 已在本机部署过一次：`F:\develop_class_call\ClassWidgets-Windows-x64\plugins\ClassSpeaker\`。
+> 插件模式下**不会额外生成托盘图标**（CW 自带插件设置页），
+> 想让喇叭图标常驻就在 `plugins\ClassSpeaker\data\config.json` 里加 `"show_tray_icon": true`。
+>
+> 已在本机部署并验证过：`F:\develop_class_call\ClassWidgets-Windows-x64\plugins\ClassSpeaker\`。
 > 重新部署重复执行上面的命令即可（会覆盖，但**保留 `data/` 目录**，不会清掉已有账号）。
 > 想连独立版一起拷进去，加 `-WithStandalone`。
 >
@@ -288,9 +297,30 @@ python tools\plugin_test.py     :: CW 插件入口
 
 插件版和独立版是**同一套代码的两个入口**，插件版没有独立进程 —— 服务跑在 Class Widgets 进程里面。
 
-### 10.1 安装
+### 10.1 CW 的插件机制（照着实现，别照过时文档）
 
-**推荐：一键部署脚本**
+CW 的 `PluginLoader.load_plugins()` 实际做的是：
+
+```python
+for folder in PLUGIN_HOME.iterdir():                  # <CW>\plugins\<目录名>
+    if folder.is_dir() and (folder / 'plugin.json').exists():
+        if folder.name not in plugin_config['enabled_plugins']:
+            continue                                  # 未启用 → 直接跳过
+        module = importlib.import_module(f"plugins.{folder.name}")   # 当「包」导入
+        if hasattr(module, 'Settings'): ...Settings(插件路径)...      # 可选设置页
+        if hasattr(module, 'Plugin'):  ...Plugin(cw_contexts, method)...
+        logger.success(f"加载插件成功：{module_name}")               # 没找到 Plugin 也照样打 SUCCESS
+```
+
+由此推出三条硬性要求：
+
+1. **插件目录必须是一个 Python 包** —— 根目录要有 `__init__.py` 并由它 `from .main import Plugin, Settings`。
+   少了它，`import_module` 会把目录当成 PEP 420 命名空间包：**导入不报错、也找不到 Plugin，
+   日志却照样打「加载插件成功」**，插件实际不会运行（我们就踩过这个坑）。
+2. **必须在 `config\plugin.json` 的 `enabled_plugins` 里**，CW 才会加载它（可在 CW 界面里启用）。
+3. `Plugin.__init__(cw_contexts, method)` / `execute()` / `update(cw_contexts)` 就是被调用的三个方法。
+
+### 10.2 安装
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\deploy_to_cw.ps1
@@ -298,52 +328,58 @@ powershell -ExecutionPolicy Bypass -File tools\deploy_to_cw.ps1
 # 连独立版一起拷： -WithStandalone
 ```
 
-脚本会自动找到同级目录下的 `ClassWidgets-Windows-x64` / `-x86`，把
-`main.py`、`plugin.json`、`classspeaker\` 复制到 `<CW>\plugins\ClassSpeaker\`。
-**重复执行 = 更新**（会保留 `data\`，不会清掉账号）。
+会复制 `__init__.py`、`main.py`、`plugin.json`、`classspeaker\` 到
+`<CW>\plugins\ClassSpeaker\`。**重复执行 = 更新**（保留 `data\`，不清账号）。
 
-**手动部署**：把 `ClassSpeaker` 文件夹里的 `main.py`、`plugin.json`、`classspeaker\`
-拷进 `ClassWidgets-Windows-x64\plugins\ClassSpeaker\` 即可（目录名随意，但建议保持一致）。
+手动部署也一样：把上面四样拷进去，目录名建议保持 `ClassSpeaker`。
 
-### 10.2 第一次使用
+### 10.3 第一次使用
 
-1. 启动 `ClassWidgets.exe`。插件的 `plugin_ver` 是 2，对应 CW 1.2.x，
-   默认 `auto_enable_plugin=1`，**插件会被自动加载**（无需手动启用）。
-2. 加载后插件会：
-   - 启动内嵌 HTTP 服务（默认端口 10265）；
-   - 首次运行**自动弹出一次设置窗口**，之后不再自动弹；
-   - 在任务栏托盘多出一个**喇叭图标**（CW 自己的图标仍在）。
-3. 在 Class Widgets 里**添加小组件「教室小喇叭」**（CW 的「小组件」/「添加组件」里找），
-   它会实时显示：`待确认 N 条　http://192.168.1.39:10265` —— 这个地址就是给老师用的。
-4. 右键托盘喇叭图标 → **设置…**，可改端口、弹窗大小/字体/透明度、提示音、**开机自动启动**，
-   以及点「测试弹窗」先看效果。
+1. 启动 `ClassWidgets.exe`，在 **「设置 → 插件」里启用「教室小喇叭」**
+   （等价于把 `"ClassSpeaker"` 写进 `<CW>\config\plugin.json` 的 `enabled_plugins`）；
+2. 在 CW 里**添加小组件「教室小喇叭」**，它会实时显示 `待确认 N 条　http://192.168.1.39:10265`；
+3. 首次运行会**自动弹出一次设置窗口**（端口、弹窗大小/字体/透明度、提示音、开机自启、测试弹窗）；
+4. 之后想改设置：CW 插件管理里点设置，或把 `data\config.json` 的 `show_tray_icon` 设为 `true`
+   让喇叭托图标常驻（插件模式默认不建托盘图标，避免和 CW 自己的图标打架）。
 
-### 10.3 老师怎么用
+### 10.4 老师怎么用
 
 浏览器打开 `http://教室电脑IP:10265` → 注册教师账号（显示名会出现在弹窗上）→
 管理员用 `admin` / `admin123` 在页面下方「账号管理」批准 → 老师登录即可发消息。
 详见 [第 3 节](#3-教师端怎么用)。
 
-### 10.4 更新 / 卸载
+### 10.5 更新 / 卸载 / 数据位置
 
 | 操作 | 做法 |
 |---|---|
-| 更新插件 | 重新跑 `deploy_to_cw.ps1`，或手动覆盖 `main.py` + `classspeaker\`，然后重启 CW |
-| 临时停用 | CW 设置里关掉这个插件，或删掉 `plugins\ClassSpeaker` 整个目录 |
-| 彻底卸载 | 关掉 CW → 删除 `plugins\ClassSpeaker` 目录（其中 `data\` 存着账号和消息，一并删掉即彻底清理） |
+| 更新插件 | 重新跑 `deploy_to_cw.ps1`，或覆盖 `__init__.py` + `main.py` + `classspeaker\`，然后重启 CW |
+| 临时停用 | CW 的「设置 → 插件」里关掉，或删掉 `plugins\ClassSpeaker` 整个目录 |
+| 彻底卸载 | 关掉 CW → 删除 `plugins\ClassSpeaker` 目录（`data\` 里是账号和消息，一并删即彻底清理） |
 | 账号数据在哪 | `<CW>\plugins\ClassSpeaker\data\`（`config.json`、`speaker.db`、`server.log`） |
 
-### 10.5 插件版特有的注意点
+### 10.6 排查：插件"看起来加载了"但没反应
+
+先看 `<CW>\plugins\ClassSpeaker\data\server.log`。里面有我们启动时自报的运行形态，一眼就能看出问题：
+
+```
+运行形态：frozen=True meipass=<CW安装目录> executable=<CW>\ClassWidgets.exe
+目录：程序=<CW>\plugins\ClassSpeaker 包=...\classspeaker 资源=...\web 数据=...\data
+```
+
+| 现象 | 原因 |
+|---|---|
+| CW 日志有「加载插件成功」但没有 `data\` 目录 | 缺 `__init__.py`（见 10.1），或插件没在 `enabled_plugins` 里 |
+| 网页打开是 404、`/api/health` 却正常 | 资源目录被指到了宿主的 `_MEIPASS`。CW 是 **onedir** 打包，它的 `sys._MEIPASS` 就等于 CW 安装目录，插件正好在其下 —— 不能用 `sys.frozen` 判断"我是不是被打包的"（已修，判定条件收紧为「本包既在 `_MEIPASS` 里、又在系统临时目录里」） |
+| `data\` 出现在 `<CW>\data\` 里 | 同上，数据目录被误判成 CW 的安装目录 |
+| 端口被占用 | 会自动顺延并在小组件/托盘提示新地址，老师要用**新的**那个地址 |
+| CW 开了安全模式 | `config\config.ini → [Other] → safe_mode`，插件可能被禁用，关掉再启动 |
+
+### 10.7 插件版特有的注意点
 
 - **和独立版 / exe 版不能同时运行**：三者共用同一个单实例互斥体和同一个默认端口，
   先后启动会提示「教室小喇叭已在运行」。一台教室电脑只跑一种形态即可。
-- **插件版的设置窗口也是从托盘图标打开的**（CW 的插件 API 没提供"设置菜单"钩子），
-  所以托盘里会多一个我们的图标；如果不想有第二个图标，点 CW 的插件设置关掉本插件即可。
-- **插件版的网页由 CW 进程提供**，所以 CW 必须处于运行状态，老师才连得上。
-- 端口被别的程序占用时，插件会自动顺延并在小组件/托盘提示新地址，
-  老师要用**新的**那个地址。
-- 如果 CW 开了「安全模式」（`config.ini → [Other] → safe_mode`），插件可能被禁用，
-  关掉安全模式再启动。
+- **网页由 CW 进程提供**，所以 CW 必须处于运行状态，老师才连得上。
+- 小组件若没有对应主题 `.ui`，CW 会自动回退用 `widget-base.ui` 渲染，属正常现象。
 
 ---
 

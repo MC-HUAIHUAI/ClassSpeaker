@@ -232,6 +232,39 @@ def main():
                 core2.stop()
             blocker.close()
 
+        print("\n== 路径解析（三种运行形态，防回归）==")
+        from classspeaker import paths as cs_paths
+
+        check("源码运行 → 用包的父目录",
+              cs_paths.resolve_app_dir(r"F:\proj\classspeaker", "", r"C:\Python\python.exe")
+              == r"F:\proj")
+        check("CW 插件 → 用插件目录，而非宿主的 _MEIPASS",
+              cs_paths.resolve_app_dir(
+                  r"C:\CW\plugins\ClassSpeaker\classspeaker",
+                  r"C:\CW",                       # onedir 打包的宿主：_MEIPASS 就是安装目录
+                  r"C:\CW\ClassWidgets.exe",
+                  r"C:\Users\x\AppData\Local\Temp")
+              == r"C:\CW\plugins\ClassSpeaker",
+              "（CW 自己是 onedir 打包，sys.frozen/_MEIPASS 在它进程里都成立）")
+        check("打包 exe(onefile) → 用 exe 所在目录，不落在临时目录",
+              cs_paths.resolve_app_dir(
+                  r"C:\Users\x\AppData\Local\Temp\_MEI1\classspeaker",
+                  r"C:\Users\x\AppData\Local\Temp\_MEI1",
+                  r"D:\App\ClassSpeaker.exe",
+                  r"C:\Users\x\AppData\Local\Temp")
+              == r"D:\App")
+        check("打包 exe(onedir) → 同样用 exe 所在目录",
+              cs_paths.resolve_app_dir(
+                  r"D:\App\classspeaker", r"D:\App", r"D:\App\ClassSpeaker.exe",
+                  r"C:\Users\x\AppData\Local\Temp")
+              == r"D:\App")
+        check("资源目录就在本包旁边",
+              cs_paths.WEB_DIR.endswith(os.path.join("classspeaker", "web"))
+              and os.path.isfile(os.path.join(cs_paths.WEB_DIR, "index.html")),
+              cs_paths.WEB_DIR)
+        check("内置声音文件存在",
+              os.path.isfile(cs_paths.DEFAULT_SOUND), cs_paths.DEFAULT_SOUND)
+
         print("\n== 静态资源 ==")
         status, _ = request(port, "/")
         check("首页可访问", status == 200)

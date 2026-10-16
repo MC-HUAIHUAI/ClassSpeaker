@@ -26,10 +26,11 @@ from .settings import SettingsDialog
 class SpeakerDesktop(QObject):
     TICK_MS = 250
 
-    def __init__(self, core, app=None):
+    def __init__(self, core, app=None, use_tray=True):
         super(SpeakerDesktop, self).__init__(None)
         self.core = core
         self.app = app or QApplication.instance()
+        self.use_tray = bool(use_tray)
         self.queue = deque()
         self.popup = None
         self.settings_dialog = None
@@ -98,6 +99,9 @@ class SpeakerDesktop(QObject):
 
     # ---------------- 托盘 ----------------
     def _build_tray(self):
+        if not self.use_tray:
+            util.LOG.info("按配置跳过托盘图标（设置可在 Class Widgets 插件设置页里改）")
+            return
         if not QSystemTrayIcon.isSystemTrayAvailable():
             util.LOG.warn("系统托盘不可用，设置窗口只能通过首次运行或外部调用打开")
             return
