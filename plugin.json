@@ -1,7 +1,7 @@
 {
     "name": "教室小喇叭",
     "description": "教师用浏览器发消息，教室电脑弹出无边框提醒并回执“确认收到”。内置账号注册与管理员审批，纯局域网运行。",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "plugin_ver": 2,
     "author": "MC-HUAIHUAI",
     "settings": false,

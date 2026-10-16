@@ -23,7 +23,7 @@
 
 #define MyAppName "教室小喇叭"
 #define MyAppNameEn "ClassSpeaker"
-#define MyAppVersion "1.0.0"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "ClassSpeaker"
 #define MyAppExeName "ClassSpeaker.exe"
 #define MyAppId "{{B7C3A1E4-5D2F-4A8B-9E6C-1F0D3A7B5C92}"
@@ -34,7 +34,7 @@ AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppVerName={#MyAppName} {#MyAppVersion}
 AppPublisher={#MyAppPublisher}
-VersionInfoVersion=1.0.0.0
+VersionInfoVersion=1.0.1.0
 DefaultDirName={autopf}\{#MyAppNameEn}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes

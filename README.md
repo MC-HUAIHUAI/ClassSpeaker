@@ -140,8 +140,8 @@ powershell -ExecutionPolicy Bypass -File tools\build_installer.ps1
 # 产物：
 #   dist\ClassSpeaker.exe                              64 位单文件
 #   dist32\ClassSpeaker.exe                            32 位单文件（32/64 位 Windows 都能跑）
-#   installer\ClassSpeaker-1.0.0-x64-setup.exe         64 位安装包
-#   installer\ClassSpeaker-1.0.0-x86-setup.exe         32 位安装包
+#   installer\ClassSpeaker-1.0.1-x64-setup.exe         64 位安装包
+#   installer\ClassSpeaker-1.0.1-x86-setup.exe         32 位安装包
 ```
 
 - **单文件 exe**：拷到教室电脑任意目录双击即可，不需要装 Python / PyQt5。

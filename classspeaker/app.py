@@ -8,7 +8,7 @@ import time
 
 from . import auth, config as config_mod, hub as hub_mod, paths
 from . import server as server_mod, store as store_mod, util
-VERSION = "1.0.0"
+VERSION = "1.0.1"
 
 LOGIN_WINDOW = 300      # 秒
 LOGIN_MAX_FAILS = 8     # 同一 IP 在窗口内的最大失败次数

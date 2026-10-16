@@ -36,3 +36,5 @@
 5. 老师登录后发消息 → 教室电脑弹窗 → 学生点「确认收到」→ 老师页面立刻变绿
 
 完整文档见 [README](https://github.com/MC-HUAIHUAI/ClassSpeaker#readme) ｜ **License**: MIT
+
+> 本版相对上一版修了什么，见 [提交历史](https://github.com/MC-HUAIHUAI/ClassSpeaker/commits/main)。
