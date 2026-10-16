@@ -33,11 +33,25 @@ class Plugin(object):
         self._last_widget_text = None
         self._widget_ready = False
 
+        # 是否注册状态小组件由配置决定（默认不注册：
+        # 小组件只是为了显示"待确认条数 + 教师端地址"，不想要就纯后台跑）。
+        # 注意 Plugin.__init__ 早于 SpeakerCore 创建，这里直接读配置文件。
+        if self._widget_wanted():
+            try:
+                self.method.register_widget(WIDGET_CODE, WIDGET_NAME, WIDGET_WIDTH)
+                self._widget_ready = True
+            except Exception as exc:
+                self._log("warn", "注册小组件失败（不影响弹窗功能）：{}".format(exc))
+        else:
+            self._log("info", "按配置不注册小组件（show_widget=false），插件纯后台运行")
+
+    def _widget_wanted(self):
         try:
-            self.method.register_widget(WIDGET_CODE, WIDGET_NAME, WIDGET_WIDTH)
-            self._widget_ready = True
-        except Exception as exc:
-            self._log("warn", "注册小组件失败（不影响弹窗功能）：{}".format(exc))
+            from .classspeaker.config import Config
+
+            return bool(Config().get("show_widget", False))
+        except Exception:
+            return False
 
     # ---------------- 生命周期 ----------------
     def execute(self):

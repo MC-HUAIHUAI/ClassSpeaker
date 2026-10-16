@@ -10,6 +10,7 @@
     * update() 每次心跳刷新小组件内容
 """
 import importlib.util
+import json
 import os
 import shutil
 import sys
@@ -62,6 +63,19 @@ def check(name, condition, detail=""):
         print("  [FAIL] {}{}".format(name, ("  " + detail) if detail else ""))
 
 
+def _write_config(values):
+    """往插件的 data 目录写一份 config.json（模拟用户在设置里改过）。
+
+    注意：插件读的是 paths.DATA_DIR（由 CLASSSPEAKER_DATA_DIR 环境变量指定），
+    不是 cw_contexts 里的 PLUGIN_PATH。
+    """
+    data_dir = os.environ["CLASSSPEAKER_DATA_DIR"]
+    os.makedirs(data_dir, exist_ok=True)
+    with open(os.path.join(data_dir, "config.json"), "w",
+              encoding="utf-8") as fh:
+        json.dump(values, fh, ensure_ascii=False)
+
+
 def load_plugin_module():
     """按 Class Widgets 的方式加载插件。
 
@@ -111,15 +125,25 @@ def main():
         print("\n== 插件加载 ==")
         method = FakeMethod()
         contexts = {"PLUGIN_PATH": temp_dir, "State": 1, "Current_Lesson": "语文"}
-        plugin = module.Plugin(contexts, method)
 
-        check("保存了 cw_contexts", plugin.cw_contexts == contexts)
-        check("保存了 method", plugin.method is method)
-        check("注册了小组件",
+        # 默认 show_widget=false：不注册小组件，纯后台运行
+        _write_config({"show_widget": False})
+        plugin = module.Plugin(contexts, method)
+        check("默认不注册小组件（纯后台）", method.widgets == {},
+              str(method.widgets))
+
+        # 打开开关后才注册
+        method = FakeMethod()
+        _write_config({"show_widget": True})
+        plugin = module.Plugin(contexts, method)
+        check("开启 show_widget 后注册小组件",
               module.WIDGET_CODE in method.widgets,
               str(method.widgets))
         check("小组件名称正确",
               method.widgets.get(module.WIDGET_CODE, {}).get("name") == module.WIDGET_NAME)
+
+        check("保存了 cw_contexts", plugin.cw_contexts == contexts)
+        check("保存了 method", plugin.method is method)
 
         print("\n== execute() ==")
         plugin.execute()

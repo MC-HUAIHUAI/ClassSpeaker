@@ -27,6 +27,7 @@ DEFAULTS = {
     "sound_path": "",                # 留空则使用自带 assets/notify.wav
     "sound_repeat": 1,
     # ---- 其他 ----
+    "show_widget": False,             # 是否在 Class Widgets 里注册状态小组件
     "replay_pending_on_start": True,  # 程序重启后补弹未确认的消息
     "replay_hours": 12,               # 只补弹最近 N 小时内未确认的
     "show_tray_icon": True,

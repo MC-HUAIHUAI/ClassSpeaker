@@ -166,6 +166,11 @@ class SettingsPanel(QWidget):
         form3 = QFormLayout(startup)
         form3.setLabelAlignment(Qt.AlignRight)
         form3.setSpacing(8)
+        self.widget_check = QCheckBox(
+            "在 Class Widgets 里显示状态小组件（显示待确认条数与教师端地址）", startup
+        )
+        self.widget_check.setToolTip("取消勾选则插件纯后台运行，不占用 CW 的组件栏；改动需重启 Class Widgets 生效")
+        form3.addRow("", self.widget_check)
         self.autostart_check = QCheckBox(
             "开机自动启动（登录 Windows 后自动在后台运行，托盘图标常驻）", startup
         )
@@ -327,6 +332,7 @@ class SettingsPanel(QWidget):
         self.sound_check.setChecked(cfg.sound_enabled)
         self.sound_edit.setText(cfg.get("sound_path") or "")
         self.repeat_spin.setValue(cfg.sound_repeat)
+        self.widget_check.setChecked(bool(cfg.get("show_widget", False)))
         self._refresh_info()
 
     def _collect(self):
@@ -345,6 +351,7 @@ class SettingsPanel(QWidget):
             "sound_enabled": bool(self.sound_check.isChecked()),
             "sound_path": self.sound_edit.text().strip(),
             "sound_repeat": int(self.repeat_spin.value()),
+            "show_widget": bool(self.widget_check.isChecked()),
         }
 
     def _refresh_info(self):
