@@ -127,13 +127,36 @@ QPushButton#confirmBtn:pressed { background: %(brand_dark)s; }
 
 
 def dialog_stylesheet():
+    """设置面板样式。
+
+    注意：所有选择器都以 ``#settingsRoot`` 开头。这是必需的 —— 宿主
+    （Class Widgets 2）会往 QApplication 上挂全局深色样式，像
+    ``QGroupBox QLabel { color: white }`` 这种比单个 ``QLabel`` 更具体，
+    会把我们浅色面板里的文字刷成白色（白底白字，看不见）。
+    加 id 前缀后（id 权重 100 > 类型 1）稳定压过宿主的全局样式。
+    """
     return """
-QDialog { background: #f5f6f8; }
-QLabel { font-family: %(font)s; font-size: 13px; color: #2b2f36; }
-QLabel#h1 { font-size: 17px; font-weight: bold; color: #16181d; }
-QLabel#hint { color: #7d838d; font-size: 12px; }
-QLabel#fieldLabel { color: #4b515a; }
-QGroupBox {
+QWidget#settingsRoot { background: #f5f6f8; }
+
+QWidget#settingsRoot QLabel {
+    font-family: %(font)s;
+    font-size: 13px;
+    color: #2b2f36;
+}
+QWidget#settingsRoot QLabel#h1 {
+    font-size: 16px;
+    font-weight: bold;
+    color: #16181d;
+}
+QWidget#settingsRoot QLabel#hint {
+    color: #6f7580;
+    font-size: 12px;
+}
+
+QWidget#settingsRoot QWidget#tabPage { background: #ffffff; }
+QWidget#settingsRoot QScrollArea { background: #ffffff; border: none; }
+
+QWidget#settingsRoot QGroupBox {
     font-family: %(font)s;
     font-size: 13px;
     font-weight: bold;
@@ -144,44 +167,125 @@ QGroupBox {
     padding: 14px 12px 10px 12px;
     background: #ffffff;
 }
-QGroupBox::title { subcontrol-origin: margin; left: 12px; padding: 0 6px; }
-QLineEdit, QSpinBox, QComboBox, QPlainTextEdit {
+QWidget#settingsRoot QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 12px;
+    padding: 0 6px;
+    color: #2b2f36;
+    background: #ffffff;
+}
+
+QWidget#settingsRoot QLineEdit,
+QWidget#settingsRoot QSpinBox,
+QWidget#settingsRoot QComboBox,
+QWidget#settingsRoot QPlainTextEdit {
     font-family: %(font)s;
     font-size: 13px;
+    color: #16181d;
+    background: #ffffff;
     border: 1px solid #cfd4dc;
     border-radius: 8px;
     padding: 5px 8px;
-    background: #ffffff;
     min-height: 20px;
+    selection-background-color: %(brand)s;
+    selection-color: #ffffff;
 }
-QLineEdit:focus, QSpinBox:focus, QComboBox:focus { border: 1px solid %(brand)s; }
-QLineEdit[readOnly="true"] { background: #f1f3f6; color: #6b7280; }
-QPushButton {
+QWidget#settingsRoot QLineEdit:focus,
+QWidget#settingsRoot QSpinBox:focus,
+QWidget#settingsRoot QComboBox:focus {
+    border: 1px solid %(brand)s;
+}
+QWidget#settingsRoot QLineEdit[readOnly="true"] {
+    background: #f1f3f6;
+    color: #6b7280;
+}
+QWidget#settingsRoot QComboBox QAbstractItemView {
+    background: #ffffff;
+    color: #16181d;
+    selection-background-color: %(brand)s;
+    selection-color: #ffffff;
+}
+
+QWidget#settingsRoot QCheckBox {
     font-family: %(font)s;
     font-size: 13px;
+    color: #2b2f36;
+    spacing: 8px;
+    background: transparent;
+}
+
+QWidget#settingsRoot QPushButton {
+    font-family: %(font)s;
+    font-size: 13px;
+    color: #2b2f36;
+    background: #ffffff;
     border: 1px solid #cfd4dc;
     border-radius: 8px;
     padding: 6px 16px;
+}
+QWidget#settingsRoot QPushButton:hover {
+    border-color: %(brand)s;
+    color: %(brand)s;
+}
+QWidget#settingsRoot QPushButton#primary {
+    background: %(brand)s;
+    color: #ffffff;
+    border: none;
+    font-weight: bold;
+}
+QWidget#settingsRoot QPushButton#primary:hover { background: #3f7bf0; }
+QWidget#settingsRoot QPushButton#primary:pressed { background: %(brand_dark)s; }
+QWidget#settingsRoot QPushButton#author {
+    border: 1px dashed %(brand)s;
+    color: %(brand)s;
+}
+
+QWidget#settingsRoot QSlider::groove:horizontal {
+    height: 6px;
+    background: #e2e5ea;
+    border-radius: 3px;
+}
+QWidget#settingsRoot QSlider::handle:horizontal {
+    width: 16px;
+    margin: -6px 0;
+    border-radius: 8px;
+    background: %(brand)s;
+}
+
+QWidget#settingsRoot QTabWidget::pane {
+    border: 1px solid #dcdfe6;
+    border-radius: 10px;
     background: #ffffff;
 }
-QPushButton:hover { border-color: %(brand)s; color: %(brand)s; }
-QPushButton#primary {
-    background: %(brand)s; color: #ffffff; border: none; font-weight: bold;
+QWidget#settingsRoot QTabBar::tab {
+    font-family: %(font)s;
+    font-size: 13px;
+    color: #4b515a;
+    background: #e9edf3;
+    padding: 7px 18px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    margin-right: 2px;
 }
-QPushButton#primary:hover { background: #3f7bf0; }
-QPushButton#primary:pressed { background: %(brand_dark)s; }
-QPushButton#author { border: 1px dashed %(brand)s; color: %(brand)s; }
-QCheckBox { font-family: %(font)s; font-size: 13px; color: #2b2f36; spacing: 8px; }
-QSlider::groove:horizontal { height: 6px; background: #e2e5ea; border-radius: 3px; }
-QSlider::handle:horizontal {
-    width: 16px; margin: -6px 0; border-radius: 8px; background: %(brand)s;
+QWidget#settingsRoot QTabBar::tab:selected {
+    background: %(brand)s;
+    color: #ffffff;
 }
-QTabWidget::pane { border: 1px solid #dcdfe6; border-radius: 10px; background: #ffffff; }
-QTabBar::tab {
-    font-family: %(font)s; font-size: 13px; padding: 7px 18px;
-    border-top-left-radius: 8px; border-top-right-radius: 8px;
+QWidget#settingsRoot QTabBar::tab:hover:!selected { background: #dfe6f0; }
+
+QWidget#settingsRoot QScrollBar:vertical {
+    background: transparent;
+    width: 10px;
+    margin: 2px;
 }
-QTabBar::tab:selected { background: %(brand)s; color: #ffffff; }
+QWidget#settingsRoot QScrollBar::handle:vertical {
+    background: #c6ccd6;
+    border-radius: 5px;
+    min-height: 28px;
+}
+QWidget#settingsRoot QScrollBar::handle:vertical:hover { background: #aab2bf; }
+QWidget#settingsRoot QScrollBar::add-line:vertical,
+QWidget#settingsRoot QScrollBar::sub-line:vertical { height: 0; }
 """ % {"font": FONT_FAMILY, "brand": BRAND, "brand_dark": BRAND_DARK}
 
 

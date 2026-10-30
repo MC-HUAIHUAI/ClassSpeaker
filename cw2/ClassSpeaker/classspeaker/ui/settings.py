@@ -44,6 +44,7 @@ class SettingsPanel(QWidget):
 
     def __init__(self, core=None, parent=None, core_provider=None):
         super(SettingsPanel, self).__init__(parent)
+        self.setObjectName("settingsRoot")
         self._core = core
         self._core_provider = core_provider
         self._fallback_config = None
@@ -79,12 +80,10 @@ class SettingsPanel(QWidget):
     # ---------------- 界面 ----------------
     def _build_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(12)
+        layout.setContentsMargins(16, 12, 16, 12)
+        layout.setSpacing(8)
 
-        header = QLabel(style.APP_SUBTITLE, self)
-        header.setObjectName("h1")
-        layout.addWidget(header)
+        # 窗口标题已经是「教室小喇叭 · 设置」，这里不再占一整行大标题（省空间）
 
         self.status_label = QLabel("", self)
         self.status_label.setObjectName("hint")
@@ -148,6 +147,7 @@ class SettingsPanel(QWidget):
 
     def _tab_classroom(self):
         page = QWidget(self)
+        page.setObjectName("tabPage")
         outer = QVBoxLayout(page)
         outer.setContentsMargins(12, 12, 12, 12)
         outer.setSpacing(12)
@@ -219,6 +219,7 @@ class SettingsPanel(QWidget):
 
     def _tab_popup(self):
         page = QWidget(self)
+        page.setObjectName("tabPage")
         outer = QVBoxLayout(page)
         outer.setContentsMargins(12, 12, 12, 12)
         outer.setSpacing(12)
@@ -353,6 +354,7 @@ class SettingsPanel(QWidget):
 
     def _tab_account(self):
         page = QWidget(self)
+        page.setObjectName("tabPage")
         outer = QVBoxLayout(page)
         outer.setContentsMargins(12, 12, 12, 12)
         outer.setSpacing(12)
