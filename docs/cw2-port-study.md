@@ -11,10 +11,10 @@
 | 问题 | 结论 |
 |---|---|
 | 技术上能不能做 | **能**。CW2 的插件就是 Python 模块，能力比 1.x 强得多（Widgets / Notification / Schedule / Runtime / Config / Automation / Actions / UI 一整套 API） |
-| 能复用多少 | 后端（HTTP 服务、sqlite 账号库、口令哈希、配置、离线 TTS、网页前端）**几乎 100% 可复用**；**UI 层必须重写**（PyQt5 → QML） |
-| 工作量 | **3~4 个工作日**（含一个「弹窗能不能做成独立窗口」的技术验证） |
+| 能复用多少 | 后端（HTTP 服务、sqlite 账号库、口令哈希、配置、离线 TTS、网页前端）**几乎 100% 可复用**；UI 只需把 PyQt5 换成 PySide6（机械改动），**不必写 QML** |
+| 工作量 | **1~1.5 个工作日**（含半天 spike）。~~3~4 天~~ 是按"UI 必须用 QML 重写"估的，见 3.3 的修正 |
 | 最大风险 | ① 插件能否自建**无边框置顶的模态弹窗**；② 新广场还在 BETA（当前 0 个插件），提交入口/审核规则要看控制台 |
-| 建议 | 先花半天做「弹窗 + 设置页」技术验证（spike），能跑通再投入剩下的 2~3 天 |
+| 建议 | 先花半天做「弹窗 + 设置入口」技术验证（spike），能跑通再投剩下的半天到一天 |
 
 ---
 
@@ -126,6 +126,33 @@ Plugin_class = Plugin         # 加载器取 module.Plugin
 
 ---
 
+### 3.3 一个更省的路线（不写 QML）
+
+原来把 UI 估成 1.5~2 天，是假设"CW2 是 QML 应用 → 插件 UI 也必须用 QML 重写"。
+读源码后确认这个假设不成立，有两条捷径：
+
+1. **弹窗 / 设置窗口：直接换 PySide6 QtWidgets**
+   PySide6 同时带 QtWidgets 和 QtQuick，同一进程里 QWidget 窗口可以正常显示。
+   我们现有的 `popup.py` / `settings.py` 是 PyQt5 QWidget，
+   移植基本是**机械改动**（改 import、`Qt.Tool` → `Qt.WindowType.Tool` 之类、
+   `exec_()` → `exec()`、`pyqtSignal` → `Signal`），**不用重写成 QML**。
+
+2. **设置入口：用 `api.ui.register_shortcut()`**
+   接口是 `register_shortcut(shortcut_id, name, icon, action)`，其中 `action`
+   是任意 Python 可调用对象 —— 注册一个「教室小喇叭设置」快捷方式，
+   点它就打开我们自己的设置窗口。这样**连 QML 设置页都不用写**。
+
+代价：`register_shortcut` 的入口位置由 CW2 决定（在它的 UI 里），
+不如原生设置页那么"长在插件里"；但省下的时间很值。
+
+按这条路线，剩下的工作量只有：
+
+| 项 | 时间 |
+|---|---|
+| 环境搭建 + spike（验证置顶窗口能开、shortcut 能触发） | 0.5 天 |
+| PySide6 移植（popup / settings / style）+ 生命周期接线 | 0.5 天 |
+| `cwplugin.json`、图标、README、广场控制台提交 | 0.5 天 |
+
 ## 4. 技术风险与验证项
 
 ### ① 弹窗能不能做成"独立窗口"（最关键）
@@ -158,15 +185,13 @@ CW2 的 UI 全是 QML，插件的 `api.ui` 只提供**设置页**和**快捷方�
 ## 5. 建议的移植步骤
 
 1. **Spike（半天）**：在本机装 CW2（Python 3.12），写一个最小插件，
-   验证「`cwplugin.json` 被识别 → `on_load` 跑起来 → 能开一个置顶 QML 窗口」。
-   **这一步决定后面 2~3 天值不值得投。**
-2. **入口 + 后端接入（0.5 天）**：搬 `classspeaker/` 的纯 Python 部分，
-   `on_load` 里启动服务、`on_unload` 里停掉；先不做 UI，用浏览器验证网页端能发消息。
-3. **弹窗（0.5~1 天）**：QML 弹窗 + Python 桥（消息内容、确认按钮回传）。
-4. **设置页（0.5~1 天）**：QML 表单 + 端口/弹窗/声音/语音配置。
-5. **打包 + 上架（0.5 天）**：`cwplugin.json`、图标、README、控制台提交。
+   验证「`cwplugin.json` 被识别 → `on_load` 跑起来 → 能开一个置顶 QWidget 窗口
+   → `register_shortcut` 能打开它」。**这一步决定后面值不值得投。**
+2. **PySide6 移植（0.5 天）**：`popup.py` / `settings.py` / `style.py` 换 import，
+   `classspeaker/` 后端**一行都不用改**；`on_load` 起服务、`on_unload` 停掉。
+3. **打包 + 上架（0.5 天）**：`cwplugin.json`、图标、README、控制台提交。
 
-合计 **3~4 个工作日**（不含官方审核等待）。
+合计 **1~1.5 个工作日**（不含官方审核等待）。
 
 ---
 
