@@ -51,6 +51,7 @@ ClassSpeaker/
 │   │   └─ style.py          样式表与代码生成的喇叭图标
 │   ├─ web/                  教师端网页（原生 HTML/CSS/JS）
 │   └─ assets/               自带提示音 notify.wav + 打包用图标 app.ico
+├─ cw2/ClassSpeaker/         Class Widgets 2 插件（cwplugin.json + plugin.py + 同一套核心）
 └─ tools/
     ├─ smoke_test.py         后端接口端到端自测
     ├─ gui_test.py           PyQt 界面自测（offscreen 跑）
@@ -313,6 +314,39 @@ python tools\plugin_test.py     :: CW 插件入口
 > `cwplugin.json` + `Plugin(CW2Plugin)` 的 Python 模块（Python 3.12+ / PySide6 / QML），
 > 运行机制与 1.x 完全不同。移植的工作量、可复用比例、技术风险与验证步骤，
 > 见 **[docs/cw2-port-study.md](docs/cw2-port-study.md)**。
+
+### 9.1 Class Widgets 2 版本（已提供）
+
+`cw2/ClassSpeaker/` 就是 CW2 插件，和 1.x 版**共用同一套核心**：
+
+```
+cw2/ClassSpeaker/
+├─ cwplugin.json      id / name / version / api_version(>=0.7.0)
+├─ plugin.py          Plugin(CW2Plugin)：on_load / on_unload / 设置快捷方式
+├─ icon.png
+├─ README.md
+└─ classspeaker/      后端一行未改；ui/ 换成 PySide6（只改 import 与信号）
+```
+
+安装（解压 `ClassSpeaker-2.0.0-cw2-plugin.zip` 后放到下列任一位置）：
+
+```
+%LOCALAPPDATA%\Class_Widgets_2\plugins\    ← 安装版
+<ClassWidgets-2>\data\plugins\             ← 便携版（目录下有 PORTABLE 文件时）
+```
+
+然后在 CW2 的「设置 → 插件」里启用。启用后服务自动启动，
+CW2 的托盘/快捷方式里会多出「**教室小喇叭设置**」，点开就是完整设置窗口。
+
+差异只有入口与 UI 框架：
+
+| | 1.x 版 | CW2 版 |
+|---|---|---|
+| 入口 | `plugin.json` + `main.py` | `cwplugin.json` + `plugin.py` |
+| 生命周期 | `__init__` / `execute` / `update` | `on_load` / `on_unload` |
+| UI | PyQt5 | **PySide6**（代码基本一致） |
+| 设置入口 | 自己的托盘图标 | `api.ui.register_shortcut` |
+| 小组件 | CW1 组件栏 | 暂未提供（CW2 组件需 QML） |
 
 <details>
 <summary>历史流程（1.x 时期的做法，现已失效，仅作参考）</summary>
