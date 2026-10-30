@@ -1,15 +1,22 @@
 # -*- coding: utf-8 -*-
-"""打包 Class Widgets 2 插件：解压到 CW2 的 plugins 目录即可使用。
+"""打包 Class Widgets 2 插件：产出可被 CW2「导入」的 .cwplugin 归档。
 
     python tools\\build_cw2_plugin_zip.py
     python tools\\build_cw2_plugin_zip.py --out out
 
-产物：dist\\ClassSpeaker-<版本>-cw2-plugin.zip
-zip 内顶层就是 ClassSpeaker\\（含 cwplugin.json / plugin.py / classspeaker\\），
-解压到以下任一目录即可：
+产物：dist\\ClassSpeaker-<版本>.cwplugin
+（本质是 zip；CW2 的「设置 → 插件 → 导入」直接吃这个文件。）
 
-    %LOCALAPPDATA%\\Class_Widgets_2\\plugins\\      （安装版）
-    <ClassWidgets-2>\\data\\plugins\\                （便携版，目录下有 PORTABLE 文件时）
+归档结构（CW2 的 PluginArchiveInstaller 要求）：
+
+    ClassSpeaker/
+    ├─ cwplugin.json      ← 有且仅有 1 个，且所有文件都在它的同级/子目录下
+    ├─ plugin.py
+    ├─ icon.png
+    ├─ README.md
+    └─ classspeaker/...
+
+安装后 CW2 会把目录名改成 plugin id（com.mchuaihuai.classspeaker）。
 """
 import argparse
 import json
@@ -60,7 +67,7 @@ def main(argv=None):
     version = args.version or read_version()
     os.makedirs(args.out, exist_ok=True)
     target = os.path.join(
-        args.out, "ClassSpeaker-{}-cw2-plugin.zip".format(version))
+        args.out, "ClassSpeaker-{}.cwplugin".format(version))
 
     items = collect()
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
@@ -69,8 +76,7 @@ def main(argv=None):
 
     print("已生成：{}（{:.1f} KB，{} 个文件）".format(
         target, os.path.getsize(target) / 1024.0, len(items)))
-    print("用法：解压到 %LOCALAPPDATA%\\Class_Widgets_2\\plugins\\")
-    print("      或 <ClassWidgets-2>\\data\\plugins\\（便携版），重启 CW2 后在设置里启用。")
+    print("用法：CW2 →「设置 → 插件 → 导入」，选这个 .cwplugin 文件即可。")
     return 0
 
 

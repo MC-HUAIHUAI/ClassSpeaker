@@ -328,12 +328,15 @@ cw2/ClassSpeaker/
 └─ classspeaker/      后端一行未改；ui/ 换成 PySide6（只改 import 与信号）
 ```
 
-安装（解压 `ClassSpeaker-2.0.0-cw2-plugin.zip` 后放到下列任一位置）：
+安装（`.cwplugin` 归档，从界面导入）：
 
-```
-%LOCALAPPDATA%\Class_Widgets_2\plugins\    ← 安装版
-<ClassWidgets-2>\data\plugins\             ← 便携版（目录下有 PORTABLE 文件时）
-```
+1. 下载 Release 里的 **`ClassSpeaker-2.0.0.cwplugin`**
+2. 打开 CW2 →「**设置 → 插件 → 导入**」，选这个文件
+3. 在插件列表里**启用「教室小喇叭」**
+
+> `.cwplugin` 本质是 zip，CW2 的 `PluginArchiveInstaller` 会校验后解压到
+> `plugins\<plugin id>\`（本插件 id 为 `com.mchuaihuai.classspeaker`）。
+> 手动拷贝文件夹也可行（目录里要有 `cwplugin.json`），但**官方路径是导入**。
 
 然后在 CW2 的「设置 → 插件」里启用。启用后服务自动启动，
 CW2 的托盘/快捷方式里会多出「**教室小喇叭设置**」，点开就是完整设置窗口。
@@ -402,7 +405,6 @@ for folder in PLUGIN_HOME.iterdir():                  # <CW>\plugins\<目录名>
 
 解压后目录结构就是 `plugins\ClassSpeaker\{__init__.py, main.py, plugin.json, classspeaker\}`，
 重启 Class Widgets 即可。（zip 内已含顶层 `ClassSpeaker\` 目录，所以直接解压不用再建文件夹。）
-
 **方式二：一键部署脚本（从源码）**
 
 ```powershell
