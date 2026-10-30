@@ -310,8 +310,9 @@ python tools\plugin_test.py     :: CW 插件入口
 > 3. 直接 `git clone` 到 `<CW>\plugins\ClassSpeaker\`。
 >
 > 如果以后想上架新广场，需要把插件**移植成 Class Widgets 2 插件**：那边是
-> `ClassWidgets2/plugins/manifest/<id>.json` 形式的清单
-> （`id` / `api_version` / `readme` / `icon` / `tags`），运行机制也不同，需要重写适配层。
+> `cwplugin.json` + `Plugin(CW2Plugin)` 的 Python 模块（Python 3.12+ / PySide6 / QML），
+> 运行机制与 1.x 完全不同。移植的工作量、可复用比例、技术风险与验证步骤，
+> 见 **[docs/cw2-port-study.md](docs/cw2-port-study.md)**。
 
 <details>
 <summary>历史流程（1.x 时期的做法，现已失效，仅作参考）</summary>
