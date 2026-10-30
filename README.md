@@ -321,7 +321,7 @@ python tools\plugin_test.py     :: CW 插件入口
 
 ```
 cw2/ClassSpeaker/
-├─ cwplugin.json      id / name / version / api_version(>=0.7.0)
+├─ cwplugin.json      id / name / version / api_version(>=0.6.0)
 ├─ plugin.py          Plugin(CW2Plugin)：on_load / on_unload / 设置快捷方式
 ├─ icon.png
 ├─ README.md

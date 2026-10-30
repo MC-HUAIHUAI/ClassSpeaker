@@ -8,7 +8,7 @@ CW2 的插件契约（源码 src/core/plugin/loader.py）：
   * ``entry`` 指向本文件；加载器 ``spec_from_file_location`` 导入后
     取 ``module.Plugin`` 并实例化：``Plugin(plugin_api)``
   * 生命周期：``on_load()`` → 运行期 → ``on_unload()``
-  * ``api_version`` 是对插件 API（当前 0.7.0）的 PEP 440 约束
+  * ``api_version`` 是对插件 API（发行版实为 0.6.0，主分支 0.7.0）的 PEP 440 约束
 
 和 1.x 版本的区别只在「入口 + 设置入口」：
 核心（HTTP 服务 / sqlite / 鉴权 / 配置 / 离线 TTS / 教师端网页）原样复用，
@@ -32,7 +32,7 @@ META = {
     "name": "教室小喇叭",
     "author": "MC-HUAIHUAI",
     "version": "2.0.0",
-    "api_version": ">=0.7.0",
+    "api_version": ">=0.6.0",
     "entry": "plugin.py",
 }
 
