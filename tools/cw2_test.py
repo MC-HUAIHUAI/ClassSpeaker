@@ -132,6 +132,22 @@ def main():
         module = load_entry()
 
         print("\n== 清单与入口（CW2 契约）==")
+        # 防呆：CW2 副本必须是 PySide6，不能混进 PyQt5 的 import（否则 CW2 里一 import 就炸）
+        import re
+
+        pyqt_pattern = re.compile(r"^\s*(from|import)\s+PyQt5|pyqtSignal", re.M)
+        offenders = []
+        for current, _dirs, files in os.walk(PLUGIN_DIR):
+            for name in files:
+                if not name.endswith(".py"):
+                    continue
+                path = os.path.join(current, name)
+                with open(path, encoding="utf-8", errors="replace") as fh:
+                    text = fh.read()
+                if pyqt_pattern.search(text):
+                    offenders.append(os.path.relpath(path, PLUGIN_DIR))
+        check("CW2 副本里没有 PyQt5 import 残留", not offenders, str(offenders))
+
         with open(os.path.join(PLUGIN_DIR, "cwplugin.json"), encoding="utf-8") as fh:
             manifest = json.load(fh)
         for field in ("id", "name", "version", "api_version", "entry", "author"):

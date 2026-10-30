@@ -12,18 +12,20 @@ CW 会先构造设置页、后才调用 Plugin.execute()，这时核心还不存
 import os
 
 from PySide6.QtCore import Qt, QUrl, Signal
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QDesktopServices, QGuiApplication
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QFileDialog,
     QFormLayout,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QMessageBox as QtMessageBox,
     QPushButton,
+    QScrollArea,
     QSlider,
     QSpinBox,
     QTabWidget,
@@ -47,6 +49,7 @@ class SettingsPanel(QWidget):
         self._fallback_config = None
         self._preview_popup = None
         self._voices_loaded = False
+        self._fitted = False
         self.setWindowTitle("{} · 设置".format(style.APP_TITLE))
         self.setWindowIcon(style.build_icon())
         self.setStyleSheet(style.dialog_stylesheet())
@@ -89,9 +92,9 @@ class SettingsPanel(QWidget):
         layout.addWidget(self.status_label)
 
         tabs = QTabWidget(self)
-        tabs.addTab(self._tab_classroom(), "教室与网络")
-        tabs.addTab(self._tab_popup(), "弹窗与声音")
-        tabs.addTab(self._tab_account(), "账号")
+        tabs.addTab(self._wrap_scroll(self._tab_classroom()), "教室与网络")
+        tabs.addTab(self._wrap_scroll(self._tab_popup()), "弹窗与声音")
+        tabs.addTab(self._wrap_scroll(self._tab_account()), "账号")
         layout.addWidget(tabs, 1)
 
         bottom = QHBoxLayout()
@@ -116,6 +119,32 @@ class SettingsPanel(QWidget):
         close_btn.clicked.connect(self.close)
         bottom.addWidget(close_btn)
         layout.addLayout(bottom)
+
+    def _wrap_scroll(self, page):
+        """每个标签页套滚动区：内容再长也能缩放，不会把窗口最小高度顶死。"""
+        area = QScrollArea(self)
+        area.setWidgetResizable(True)
+        area.setFrameShape(QFrame.NoFrame)
+        area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        area.setWidget(page)
+        return area
+
+    def _fit_to_screen(self):
+        """按屏幕可用区域定尺寸并居中，保证底部按钮不会被顶出屏幕。"""
+        if self._fitted:
+            return
+        self._fitted = True
+        screen = QGuiApplication.primaryScreen()
+        available = screen.availableGeometry() if screen else None
+        height = 760
+        if available is not None:
+            height = max(420, min(760, available.height() - 140))
+        self.resize(600, height)
+        if available is not None:
+            self.move(
+                available.x() + max(0, (available.width() - self.width()) // 2),
+                available.y() + max(0, (available.height() - self.height()) // 2),
+            )
 
     def _tab_classroom(self):
         page = QWidget(self)
@@ -645,6 +674,7 @@ class SettingsPanel(QWidget):
 
     def showEvent(self, event):
         super(SettingsPanel, self).showEvent(event)
+        self._fit_to_screen()
         self._refresh_info()
 
     def closeEvent(self, event):
