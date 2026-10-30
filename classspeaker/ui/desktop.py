@@ -62,7 +62,8 @@ class SpeakerDesktop(QObject):
         elif self.core.config.get("show_notification_on_start", True):
             self._notify(
                 "{} 已启动".format(style.APP_TITLE),
-                "教师端地址：{}\n把该地址发给老师即可发送消息。".format(self.core.address),
+                "教师端地址：{}\n把该地址发给老师即可发送消息。\n"
+                "右键托盘里的喇叭图标可打开设置。".format(self.core.address),
             )
 
         self._refresh_tray()

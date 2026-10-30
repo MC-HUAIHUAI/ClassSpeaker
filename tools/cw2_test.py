@@ -176,8 +176,9 @@ def main():
             shortcut = api.ui.shortcuts[0]
             check("快捷方式名称正确", shortcut["name"] == "教室小喇叭设置")
             check("快捷方式 action 可调用", callable(shortcut["action"]))
-        check("插件模式不建托盘图标",
-              plugin.desktop is not None and plugin.desktop.use_tray is False)
+        check("插件自带托盘图标（右键即有「设置…」）",
+              plugin.desktop is not None and plugin.desktop.use_tray is True,
+              "show_tray_icon 默认 true")
         check("pid 已由 on_load 设置", plugin.pid == manifest["id"])
 
         print("\n== 设置窗口（PySide6）==")

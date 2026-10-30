@@ -62,8 +62,12 @@ class Plugin(CW2Plugin):
             self.core = SpeakerCore()
             set_current_core(self.core)      # 让设置窗口拿到核心对象
 
-            # CW2 有自己的托盘，插件不再额外建图标
-            self.desktop = SpeakerDesktop(self.core, app, use_tray=False)
+            # 插件自己建托盘图标（show_tray_icon 默认 true）：
+            # CW2 的「快捷方式」是需要用户手动"编辑 -> 添加"才会出现在托盘面板里的，
+            # 不直观；自己的图标右键第一项就是「设置…」，最可靠。
+            config = self.core.config
+            use_tray = bool(config.get("show_tray_icon", True))
+            self.desktop = SpeakerDesktop(self.core, app, use_tray=use_tray)
             ok, message = self.desktop.start()
             if ok:
                 self._log("info", "服务已启动，教师端地址：{}".format(self.core.address))
