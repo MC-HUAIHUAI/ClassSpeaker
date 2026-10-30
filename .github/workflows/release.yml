@@ -81,6 +81,10 @@ jobs:
           Copy-Item "installer\ClassSpeaker-$v-${{ matrix.tag }}-setup.exe" "out\ClassSpeaker-$v-${{ matrix.tag }}-setup.exe"
           Get-ChildItem out | Select-Object Name, @{n='MB';e={[math]::Round($_.Length/1MB,1)}} | Format-Table -AutoSize
 
+      - name: 打包 CW 插件 zip（只做一次，两个架构共用）
+        if: matrix.bits == '64'
+        run: python tools/build_plugin_zip.py --out out
+
       - uses: actions/upload-artifact@v4
         with:
           name: ClassSpeaker-${{ matrix.tag }}

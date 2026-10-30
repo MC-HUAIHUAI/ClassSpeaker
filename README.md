@@ -295,22 +295,34 @@ python tools\plugin_test.py     :: CW 插件入口
 - 弹窗中「未确认前保持置顶」每 2 秒重新置顶一次，若遇到全屏程序仍被遮挡，
   可把该开关关掉改用普通置顶。
 
-## 9. 发布为 CW 插件广场（可选）
+## 9. 关于「插件广场」
 
-按官方文档，上架插件广场需要：
-
-1. 把本目录推到自己的 GitHub 仓库，**先打一个 Release**（否则用户无法下载）；
-   —— 本仓库地址已经是 `https://github.com/MC-HUAIHUAI/ClassSpeaker`，
-   `plugin.json` 的 `author` / `url` / `branch` 已填好；
-2. 复刻 `Class-Widgets/plugin-plaza`，在 `Plugins/plugin_list.json` 里按格式追加条目；
-3. 提交 Pull Request。
-
-> `plugin.json` 的 `plugin_ver` 已按 Class Widgets 的
-> `config.ini → [Plugin] → version` 填为 `2`（对应 Class Widgets v1.2.x）。
+> **现状（截至 2026-10）**：Class Widgets **1.x** 的插件广场**已停止收录新插件**。
+> 官方仓库 `Class-Widgets/plugin-plaza` 在 **2026-07-14** 贴出公告：
+> **不再接受任何 Issue / PR**；新的 [插件广场](https://plaza.cw.rinlit.cn)
+> 只服务 **Class Widgets 2**（插件 API 与 1.x 完全不同，属于另一个产品）。
 >
-> 本仓库根目录同时是**合法的 CW 插件目录**（`plugin.json` + `main.py` 都在根目录），
-> 所以既可以用 `deploy_to_cw.ps1` 从源码部署，也可以直接
-> `git clone` 到 `<CW>\plugins\ClassSpeaker\`。
+> 所以本插件（面向 CW 1.2.x）**无法上架官方广场**。可用的分发方式：
+>
+> 1. **GitHub Release**（推荐）：`ClassSpeaker-<版本>-cw-plugin.zip`
+>    解压进 `<CW>\plugins\` 即可，见第 10.2 节；
+> 2. exe / 安装包：给不用 CW 的教室电脑（独立版）；
+> 3. 直接 `git clone` 到 `<CW>\plugins\ClassSpeaker\`。
+>
+> 如果以后想上架新广场，需要把插件**移植成 Class Widgets 2 插件**：那边是
+> `ClassWidgets2/plugins/manifest/<id>.json` 形式的清单
+> （`id` / `api_version` / `readme` / `icon` / `tags`），运行机制也不同，需要重写适配层。
+
+<details>
+<summary>历史流程（1.x 时期的做法，现已失效，仅作参考）</summary>
+
+1. 把插件目录推到自己的 GitHub 仓库，**先打一个 Release**；
+2. 复刻 `Class-Widgets/plugin-plaza`，在 `Plugins/plugin_list.json` 里追加条目
+   （`name` / `description` / `version` / `plugin_ver` / `author` / `url` / `branch` /
+   `update_date` / `tag`）；
+3. 提交 Pull Request，合并后即完成上架。
+
+</details>
 
 ---
 
@@ -340,8 +352,23 @@ for folder in PLUGIN_HOME.iterdir():                  # <CW>\plugins\<目录名>
    日志却照样打「加载插件成功」**，插件实际不会运行（我们就踩过这个坑）。
 2. **必须在 `config\plugin.json` 的 `enabled_plugins` 里**，CW 才会加载它（可在 CW 界面里启用）。
 3. `Plugin.__init__(cw_contexts, method)` / `execute()` / `update(cw_contexts)` 就是被调用的三个方法。
+4. `plugin.json` 的 `plugin_ver` 要匹配 CW 的 `config.ini → [Plugin] → version`；
+   本插件填的是 `2`（对应 Class Widgets 1.2.x）。
 
 ### 10.2 安装
+
+**方式一：直接解压（最简单）**
+
+下载 Release 里的 **`ClassSpeaker-<版本>-cw-plugin.zip`**，解压到：
+
+```
+<ClassWidgets>\plugins\
+```
+
+解压后目录结构就是 `plugins\ClassSpeaker\{__init__.py, main.py, plugin.json, classspeaker\}`，
+重启 Class Widgets 即可。（zip 内已含顶层 `ClassSpeaker\` 目录，所以直接解压不用再建文件夹。）
+
+**方式二：一键部署脚本（从源码）**
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\deploy_to_cw.ps1
@@ -351,6 +378,13 @@ powershell -ExecutionPolicy Bypass -File tools\deploy_to_cw.ps1
 
 会复制 `__init__.py`、`main.py`、`plugin.json`、`classspeaker\` 到
 `<CW>\plugins\ClassSpeaker\`。**重复执行 = 更新**（保留 `data\`，不清账号）。
+
+**方式三：git clone**
+
+```bat
+cd /d "<ClassWidgets>\plugins"
+git clone https://github.com/MC-HUAIHUAI/ClassSpeaker.git ClassSpeaker
+```
 
 手动部署也一样：把上面四样拷进去，目录名建议保持 `ClassSpeaker`。
 
