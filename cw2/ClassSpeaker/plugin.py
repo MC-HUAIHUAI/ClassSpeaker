@@ -30,7 +30,7 @@ from src.core.plugin import CW2Plugin  # noqa: E402
 META = {
     "id": "com.mchuaihuai.classspeaker",
     "name": "教室小喇叭",
-    "author": "MC-HUAIHUAI",
+    "author": "MC_HUAIHUAI",
     "version": "2.0.0",
     "api_version": ">=0.6.0",
     "entry": "plugin.py",

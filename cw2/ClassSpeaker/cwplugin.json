@@ -4,7 +4,7 @@
     "version": "2.0.0",
     "api_version": ">=0.6.0",
     "entry": "plugin.py",
-    "author": "MC-HUAIHUAI",
+    "author": "MC_HUAIHUAI",
     "icon": "icon.png",
     "readme": "README.md",
     "description": "老师用浏览器发消息，教室电脑弹出无边框提醒并回执「确认收到」，支持离线语音播报。",

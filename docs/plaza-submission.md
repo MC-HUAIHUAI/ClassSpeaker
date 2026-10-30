@@ -39,7 +39,7 @@ F:\develop_class_call\ClassSpeaker\dist\ClassSpeaker-2.0.0.cwplugin
 | **名称** | `教室小喇叭` |
 | **版本** | `2.0.0` |
 | **api_version / 适用 API** | `>=0.6.0` |
-| **作者** | `MC-HUAIHUAI` |
+| **作者** | `MC_HUAIHUAI` |
 | **仓库地址** | `https://github.com/MC-HUAIHUAI/ClassSpeaker` |
 | **分支** | `main` |
 | **图标** | `icon.png`（随归档一起上传；如需单独上传，用桌面插件目录里的 `icon.png`） |
