@@ -314,6 +314,9 @@ python tools\plugin_test.py     :: CW 插件入口
 > `cwplugin.json` + `Plugin(CW2Plugin)` 的 Python 模块（Python 3.12+ / PySide6 / QML），
 > 运行机制与 1.x 完全不同。移植的工作量、可复用比例、技术风险与验证步骤，
 > 见 **[docs/cw2-port-study.md](docs/cw2-port-study.md)**。
+>
+> **上架新广场的提交清单（字段、文件、步骤）见
+> [docs/plaza-submission.md](docs/plaza-submission.md)**。
 
 ### 9.1 Class Widgets 2 版本（已提供）
 
