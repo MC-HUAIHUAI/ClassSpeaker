@@ -16,8 +16,10 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QColor
 
 from . import style
+from .. import tts as tts_mod, util
 
 SOUND_INTERVAL_MS = 2600
+TTS_DELAY_WITH_SOUND_MS = 900   # 有提示音时让语音晚一点起，别叠在一起
 
 
 class MessageBox(QWidget):
@@ -42,6 +44,7 @@ class MessageBox(QWidget):
         self._build_ui()
         self._apply_geometry()
         self._start_sound()
+        self._start_speech()
 
     # ---------------- 构建界面 ----------------
     def _build_ui(self):
@@ -186,6 +189,41 @@ class MessageBox(QWidget):
         except Exception:
             pass
 
+    # ---------------- 语音播报 ----------------
+    def _start_speech(self):
+        """把消息内容念出来（离线 TTS）。有提示音时稍晚一点开始，避免叠在一起。"""
+        if not self.config.tts_enabled:
+            return
+        text = (self.message.get("content") or "").strip()
+        if not text:
+            return
+        if not tts_mod.TTSEngine.supported():
+            return
+        delay = TTS_DELAY_WITH_SOUND_MS if self.config.sound_enabled else 0
+        if delay:
+            QTimer.singleShot(delay, self._speak)
+        else:
+            self._speak()
+
+    def _speak(self):
+        if self._confirmed:
+            return
+        text = (self.message.get("content") or "").strip()
+        if not text:
+            return
+        started = tts_mod.speak(
+            text,
+            rate=self.config.tts_rate,
+            volume=self.config.tts_volume,
+            voice_zh=self.config.tts_voice_zh,
+            voice_en=self.config.tts_voice_en,
+        )
+        if started:
+            util.LOG.info("语音播报：开始朗读（{} 字）".format(len(text)))
+
+    def stop_speech(self):
+        tts_mod.stop()
+
     # ---------------- 置顶 ----------------
     def _keep_on_top(self):
         if self._confirmed or not self.isVisible():
@@ -201,6 +239,7 @@ class MessageBox(QWidget):
             return
         self._confirmed = True
         self.stop_sound()
+        self.stop_speech()
         self._top_timer.stop()
         self.hide()
         try:

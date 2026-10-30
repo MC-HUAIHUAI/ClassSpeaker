@@ -39,6 +39,7 @@ ClassSpeaker/
 │   ├─ config.py             配置读写（data/config.json）
 │   ├─ store.py              sqlite3 存储（users / messages）
 │   ├─ auth.py               口令哈希（PBKDF2）与登录令牌
+│   ├─ tts.py                离线语音播报（Windows 自带 System.Speech，中英文自动切换）
 │   ├─ autostart.py          开机自启（HKCU\...\Run，无需管理员）
 │   ├─ hub.py                进程内事件总线（HTTP 线程 → 界面线程）
 │   ├─ server.py             内嵌 HTTP 服务（http.server，纯标准库）
@@ -54,6 +55,7 @@ ClassSpeaker/
     ├─ smoke_test.py         后端接口端到端自测
     ├─ gui_test.py           PyQt 界面自测（offscreen 跑）
     ├─ plugin_test.py        CW 插件入口自测
+    ├─ tts_test.py           语音播报自测（不发声）
     ├─ make_sound.py         重新生成自带提示音
     ├─ make_icon.py          生成 exe 用的 app.ico（含 --preview）
     ├─ build_exe.py          打包 exe（--arch 32/64，单文件 / 目录版）
@@ -140,8 +142,8 @@ powershell -ExecutionPolicy Bypass -File tools\build_installer.ps1
 # 产物：
 #   dist\ClassSpeaker.exe                              64 位单文件
 #   dist32\ClassSpeaker.exe                            32 位单文件（32/64 位 Windows 都能跑）
-#   installer\ClassSpeaker-1.0.1-x64-setup.exe         64 位安装包
-#   installer\ClassSpeaker-1.0.1-x86-setup.exe         32 位安装包
+#   installer\ClassSpeaker-1.1.0-x64-setup.exe         64 位安装包
+#   installer\ClassSpeaker-1.1.0-x86-setup.exe         32 位安装包
 ```
 
 - **单文件 exe**：拷到教室电脑任意目录双击即可，不需要装 Python / PyQt5。
@@ -194,6 +196,7 @@ powershell -ExecutionPolicy Bypass -File tools\build_installer.ps1
 | 启动与后台运行 | **显示状态小组件**（默认关：插件纯后台运行，不占 CW 的组件栏；开启后会在 CW 里注册「教室小喇叭」小组件显示待确认条数与教师端地址，改动需重启 CW）、**开机自动启动**（写 HKCU 注册表 Run 项，不需要管理员权限；打开设置时会回显当前实际注册的命令，位置变了保存后会自动修正） |
 | 弹窗外观 | **弹窗宽度 / 高度**、**正文字体大小**、**窗口透明度**（30%–100%）、标题模板、允许拖动、未确认前保持置顶 |
 | 提示音 | **是否播放声音**（默认关闭）、**声音文件路径**（留空=自带 `notify.wav`，可浏览选择 wav/mp3/wma/ogg）、重复播放次数、试听 |
+| 语音播报 | **是否朗读消息内容**（默认关闭）、**语速**（-10~10 档）、**音量**、**中文声音** / **英文声音**（可指定，默认自动挑第一个对应语言的语音）、试听 / 停止朗读、显示检测到的语音列表 |
 | 其他 | **测试弹窗**（按当前设置立即预览）、打开数据目录、**为作者充电**（打开 B 站主页）、重置管理员密码 |
 
 弹窗相关特性（固定行为，不提供开关）：
@@ -202,6 +205,23 @@ powershell -ExecutionPolicy Bypass -File tools\build_installer.ps1
 - 右下角只有「**确认收到**」一个按钮，**没有关闭按钮**；
 - `Alt+F4`、`Esc`、系统关闭一律被忽略，**只能确认收到才能关闭**；
 - 多条消息**排队串行**显示，确认一条再弹下一条。
+
+### 语音播报（离线 TTS）
+
+把老师发的消息**念出来**，完全本地、不联网：
+
+- 用 Windows 自带的 **System.Speech**（通过 `powershell.exe` 调用），
+  不需要联网、不需要装任何第三方库；
+- **中英文自动切换**：一段文字里混排时会按字符脚本切成多段，
+  中文用中文语音（如 `Microsoft Huihui`）、英文用英文语音（如 `Microsoft Zira`）。
+  例如「请打开 Unit 5 的练习册」会念成 zh → en → zh 三段；
+- 可调**语速**（-10~10）与**音量**，也可以手动指定中/英文各用哪个语音；
+- 点「**确认收到**」时**立刻停止**朗读（kill 子进程，约 0.03 秒），不会继续吵；
+- 和提示音同时开启时，语音会延后 0.9 秒开始，避免叠在一起；
+- 长消息按标点切成 ≤60 字的小段，所以即使不点确认，也能在几十秒内念完。
+
+> 没有可用的语音包时（精简版 Windows），设置里会提示"未检测到可用语音"，
+> 在 Windows「设置 → 时间和语言 → 语音」里添加中文/英文语音即可。
 
 ---
 

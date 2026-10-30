@@ -26,6 +26,12 @@ DEFAULTS = {
     "sound_enabled": False,          # 默认不开启
     "sound_path": "",                # 留空则使用自带 assets/notify.wav
     "sound_repeat": 1,
+    # ---- 语音播报（离线 TTS，Windows 自带语音）----
+    "tts_enabled": False,            # 默认不开启
+    "tts_rate": 0,                   # 语速 -10 ~ 10，0 为正常
+    "tts_volume": 100,               # 音量 0 ~ 100
+    "tts_voice_zh": "",              # 留空 = 自动挑第一个中文语音
+    "tts_voice_en": "",              # 留空 = 自动挑第一个英文语音
     # ---- 其他 ----
     "show_widget": False,             # 是否在 Class Widgets 里注册状态小组件
     "replay_pending_on_start": True,  # 程序重启后补弹未确认的消息
@@ -144,6 +150,27 @@ class Config(object):
     @property
     def sound_repeat(self):
         return max(1, min(10, self.typed("sound_repeat", int, 1)))
+
+    # ---- 语音播报 ----
+    @property
+    def tts_enabled(self):
+        return bool(self.get("tts_enabled", False))
+
+    @property
+    def tts_rate(self):
+        return max(-10, min(10, self.typed("tts_rate", int, 0)))
+
+    @property
+    def tts_volume(self):
+        return max(0, min(100, self.typed("tts_volume", int, 100)))
+
+    @property
+    def tts_voice_zh(self):
+        return (self.get("tts_voice_zh") or "").strip()
+
+    @property
+    def tts_voice_en(self):
+        return (self.get("tts_voice_en") or "").strip()
 
     def sound_file(self):
         """返回实际可用的声音文件路径；没有则返回空串。"""

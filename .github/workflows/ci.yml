@@ -52,5 +52,8 @@ jobs:
           QT_QPA_PLATFORM: offscreen
         run: python tools/plugin_test.py
 
+      - name: 语音播报（离线 TTS）测试
+        run: python tools/tts_test.py
+
       - name: 编译检查
         run: python -m compileall -q .

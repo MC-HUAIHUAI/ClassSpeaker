@@ -78,6 +78,7 @@ class SpeakerDesktop(QObject):
         if self.popup is not None:
             try:
                 self.popup.stop_sound()
+                self.popup.stop_speech()
                 self.popup._confirmed = True
                 self.popup.close()
             except Exception:

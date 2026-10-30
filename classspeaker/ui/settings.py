@@ -15,6 +15,7 @@ from PyQt5.QtCore import Qt, QUrl, pyqtSignal
 from PyQt5.QtGui import QDesktopServices
 from PyQt5.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QFileDialog,
     QFormLayout,
     QGroupBox,
@@ -30,7 +31,7 @@ from PyQt5.QtWidgets import (
     QWidget,
 )
 
-from .. import autostart, config as config_mod, paths, util
+from .. import autostart, config as config_mod, paths, tts as tts_mod, util
 
 from . import style
 from .popup import MessageBox
@@ -45,6 +46,7 @@ class SettingsPanel(QWidget):
         self._core_provider = core_provider
         self._fallback_config = None
         self._preview_popup = None
+        self._voices_loaded = False
         self.setWindowTitle("{} · 设置".format(style.APP_TITLE))
         self.setWindowIcon(style.build_icon())
         self.setStyleSheet(style.dialog_stylesheet())
@@ -267,6 +269,48 @@ class SettingsPanel(QWidget):
         form2.addRow("重复播放", self.repeat_spin)
         outer.addWidget(sound_group)
 
+        speech_group = QGroupBox("语音播报（离线，中英文自动切换）", page)
+        form3 = QFormLayout(speech_group)
+        form3.setLabelAlignment(Qt.AlignRight)
+        form3.setSpacing(8)
+        self.tts_check = QCheckBox(
+            "消息弹出时朗读内容（使用 Windows 自带语音，完全离线）", speech_group
+        )
+        form3.addRow("", self.tts_check)
+
+        self.tts_rate_spin = QSpinBox(speech_group)
+        self.tts_rate_spin.setRange(-10, 10)
+        self.tts_rate_spin.setSuffix(" 档（0 为正常）")
+        form3.addRow("语速", self.tts_rate_spin)
+
+        self.tts_volume_spin = QSpinBox(speech_group)
+        self.tts_volume_spin.setRange(0, 100)
+        self.tts_volume_spin.setSuffix(" %")
+        form3.addRow("音量", self.tts_volume_spin)
+
+        self.tts_zh_combo = QComboBox(speech_group)
+        form3.addRow("中文声音", self.tts_zh_combo)
+
+        self.tts_en_combo = QComboBox(speech_group)
+        form3.addRow("英文声音", self.tts_en_combo)
+
+        listen_row = QWidget(speech_group)
+        listen_layout = QHBoxLayout(listen_row)
+        listen_layout.setContentsMargins(0, 0, 0, 0)
+        listen_layout.setSpacing(8)
+        listen_btn = QPushButton("试听", listen_row)
+        listen_btn.clicked.connect(self._preview_speech)
+        stop_btn = QPushButton("停止朗读", listen_row)
+        stop_btn.clicked.connect(lambda: tts_mod.stop())
+        self.tts_status = QLabel(speech_group)
+        self.tts_status.setObjectName("hint")
+        self.tts_status.setWordWrap(True)
+        listen_layout.addWidget(listen_btn)
+        listen_layout.addWidget(stop_btn)
+        form3.addRow("", listen_row)
+        form3.addRow("状态", self.tts_status)
+        outer.addWidget(speech_group)
+
         test_row = QHBoxLayout()
         test_btn = QPushButton("测试弹窗", page)
         test_btn.setObjectName("primary")
@@ -333,6 +377,10 @@ class SettingsPanel(QWidget):
         self.sound_edit.setText(cfg.get("sound_path") or "")
         self.repeat_spin.setValue(cfg.sound_repeat)
         self.widget_check.setChecked(bool(cfg.get("show_widget", False)))
+        self.tts_check.setChecked(cfg.tts_enabled)
+        self.tts_rate_spin.setValue(cfg.tts_rate)
+        self.tts_volume_spin.setValue(cfg.tts_volume)
+        self._refresh_speech_voices()
         self._refresh_info()
 
     def _collect(self):
@@ -352,7 +400,72 @@ class SettingsPanel(QWidget):
             "sound_path": self.sound_edit.text().strip(),
             "sound_repeat": int(self.repeat_spin.value()),
             "show_widget": bool(self.widget_check.isChecked()),
+            "tts_enabled": bool(self.tts_check.isChecked()),
+            "tts_rate": int(self.tts_rate_spin.value()),
+            "tts_volume": int(self.tts_volume_spin.value()),
+            "tts_voice_zh": self.tts_zh_combo.currentData() or "",
+            "tts_voice_en": self.tts_en_combo.currentData() or "",
         }
+
+    # ---------------- 语音播报 ----------------
+    def _refresh_speech_voices(self, force=False):
+        """列出系统里的语音，按中/英文分别填进下拉框（结果会缓存）。"""
+        if self._voices_loaded and not force:
+            return
+        self._voices_loaded = True
+        try:
+            found = tts_mod.voices()
+        except Exception:
+            found = []
+        zh_count = self._fill_voice_combo(
+            self.tts_zh_combo, found, "zh", self.config.tts_voice_zh)
+        en_count = self._fill_voice_combo(
+            self.tts_en_combo, found, "en", self.config.tts_voice_en)
+        if not found:
+            self.tts_status.setText(
+                "未检测到可用语音。可在 Windows「设置 → 时间和语言 → 语音」"
+                "里添加中文/英文语音包。"
+            )
+        else:
+            self.tts_status.setText(
+                "共 {} 个语音（中文 {} / 英文 {}）：{}".format(
+                    len(found), zh_count, en_count,
+                    "、".join(name for name, _c in found),
+                )
+            )
+
+    @staticmethod
+    def _fill_voice_combo(combo, voices, lang, current):
+        combo.blockSignals(True)
+        combo.clear()
+        combo.addItem("自动（第一个{}语音）".format("中文" if lang == "zh" else "英文"), "")
+        matched = 0
+        for name, culture in voices:
+            if (tts_mod.voice_language(culture) != lang
+                    and tts_mod.voice_language(name) != lang):
+                continue
+            combo.addItem(name, name)
+            matched += 1
+        index = combo.findData(current) if current else 0
+        combo.setCurrentIndex(index if index >= 0 else 0)
+        combo.blockSignals(False)
+        return matched
+
+    def _preview_speech(self):
+        if not tts_mod.TTSEngine.supported():
+            QtMessageBox.warning(self, "语音播报", "当前系统不支持（仅 Windows）")
+            return
+        ok = tts_mod.preview(
+            rate=self.tts_rate_spin.value(),
+            volume=self.tts_volume_spin.value(),
+            voice_zh=self.tts_zh_combo.currentData() or "",
+            voice_en=self.tts_en_combo.currentData() or "",
+        )
+        if not ok:
+            QtMessageBox.warning(
+                self, "语音播报",
+                "无法启动朗读。请确认这台 Windows 里已经装了语音包。",
+            )
 
     def _refresh_info(self):
         ips = util.all_lan_ips()
