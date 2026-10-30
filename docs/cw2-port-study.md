@@ -202,3 +202,47 @@ CW2 的 UI 全是 QML，插件的 `api.ui` 只提供**设置页**和**快捷方�
 只是不会有官方广场入口（见 README 第 9 节）。
 
 只有当你希望**出现在新广场、被 CW2 用户搜到**时，移植才有意义。
+
+---
+
+## 7. 实际移植结果（已完成）
+
+按第 3.3 节的省钱路线做完，**契约测试 30 项一次通过**（Python 3.12 + PySide6 6.12）：
+
+| 项 | 结果 |
+|---|---|
+| `cwplugin.json` 六个必填字段 | ✅ |
+| 包导入后能拿到 `Plugin` | ✅ |
+| `Plugin(plugin_api)` + `on_load` 起服务 | ✅（HTTP 服务在 10265 正常） |
+| `api.ui.register_shortcut` 注册「教室小喇叭设置」 | ✅ |
+| 设置窗口（PySide6，含语音播报分组） | ✅ |
+| 弹窗：无边框 / 置顶 / 只有确认按钮 / 关不掉 | ✅ |
+| 确认后写回执、`on_unload` 停服务 | ✅ |
+
+**PyQt5 → PySide6 的实际改动**：只有 4 个文件、三类改动
+（`import`、`pyqtSignal` → `Signal`、`QAction` 从 `QtWidgets` 移到 `QtGui`）；
+PySide6 兼容未加限定的枚举短写（`Qt.Tool`、`Qt.WA_TranslucentBackground` 等），
+所以业务代码一行没动。**没有写任何 QML。**
+
+### 真机 E2E 遇到的两个 CW2 自身问题
+
+在本机跑 CW2 **2.0.1.0** 便携版时，插件还没加载就被 CW2 自己的问题挡住了
+（都与本插件无关，建议反馈给上游）：
+
+1. **stdout 被重定向时崩溃**（中文 Windows）
+   ```
+   UnicodeEncodeError: 'gbk' codec can't encode character '\u2728' in position 0
+     File "RinUI\core\launcher.py", line 62, in __init__
+   ```
+   `RinUI` 往 stdout 打印含 emoji 的字符串，在代码页 936 下抛错。
+   设 `PYTHONUTF8=1` / `PYTHONIOENCODING=utf-8` 也无效（应为显式 `encode('gbk')`）。
+
+2. **首次使用引导不写配置**
+   正常启动会停在「使用引导」窗口；此时 `%LOCALAPPDATA%\Class Widgets 2\configs\`
+   里**不会生成 `configs.json`**（`ConfigManager.save()` 没被调用），
+   所以 `init()` 里的插件加载阶段根本没开始。
+   尝试手工预置 `{"app": {"tutorial_completed": true}}` 也未生效
+   （文件始终未被读取/重写）。
+
+结论：**代码侧已就绪**，真机验证只差「把向导点完」这一步 —— 在用户正常使用的机器上
+走一遍即可（见 README 9.1 的三步安装）。
